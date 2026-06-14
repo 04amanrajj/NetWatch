@@ -1,0 +1,12 @@
+[workspace]
+resolver = "2"
+members = [
+    "crates/netwatch-core",
+    "crates/netwatch-collector",
+    "crates/netwatch-stats",
+    "crates/netwatch-db",
+    "crates/netwatch-export",
+    "crates/netwatch-tui",
+    "crates/netwatch-daemon",
+    "crates/netwatch-cli",
+]
