@@ -12,3 +12,18 @@ A lightweight, SQLite-backed network traffic monitor for Linux systems with a st
 
 ## Installation
 
+### 1. Build from Source
+```bash
+cargo build --release
+```
+
+### 2. Enable systemd Daemon Service
+
+You can run the background daemon as a **User-level service** (starts when you log in) or a **System-wide service** (starts automatically at boot).
+
+#### Option A: User-level Service (Default)
+```bash
+mkdir -p ~/.config/systemd/user/
+cp assets/systemd/netwatchd.service ~/.config/systemd/user/netwatchd.service
+systemctl --user daemon-reload
+systemctl --user enable --now netwatchd.service
