@@ -10,3 +10,15 @@ members = [
     "crates/netwatch-daemon",
     "crates/netwatch-cli",
 ]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2021"
+license = "MIT"
+authors = ["NetWatch Contributors"]
+repository = "https://github.com/netwatch/netwatch"
+description = "Lightweight Linux network usage monitor with TUI"
+
+[workspace.dependencies]
+anyhow = "1"
+chrono = { version = "0.4", features = ["serde"] }
