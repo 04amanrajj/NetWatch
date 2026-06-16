@@ -35,5 +35,43 @@ pub struct Config {
     pub theme: String,
 
     #[serde(default)]
+    pub units: Units,
+
+    #[serde(default = "default_history_days")]
+    pub history_days: u32,
+
+    #[serde(default = "default_batch_write_interval")]
+    pub batch_write_interval: u64,
+
+    #[serde(default = "default_skip_loopback")]
+    pub skip_loopback: bool,
+}
+
+fn default_sample_interval() -> u64 {
+    1
+}
+
+fn default_database() -> String {
+    "~/.local/share/netwatch/netwatch.db".into()
+}
+
+fn default_ignore() -> Vec<String> {
+    vec![
+        "docker*".into(),
+        "virbr*".into(),
+        "veth*".into(),
+    ]
+}
+
+fn default_theme() -> String {
+    "default".into()
+}
+
+fn default_history_days() -> u32 {
+    365
+}
+
+fn default_batch_write_interval() -> u64 {
+    5
 
 }
