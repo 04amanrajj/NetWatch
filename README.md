@@ -27,3 +27,17 @@ mkdir -p ~/.config/systemd/user/
 cp assets/systemd/netwatchd.service ~/.config/systemd/user/netwatchd.service
 systemctl --user daemon-reload
 systemctl --user enable --now netwatchd.service
+```
+
+#### Option B: System-wide Service
+```bash
+sudo cp target/release/netwatchd /usr/local/bin/
+sudo cp assets/systemd/netwatchd-system.service /etc/systemd/system/netwatchd.service
+# Edit service to set your actual user:
+# sudo nano /etc/systemd/system/netwatchd.service
+sudo systemctl daemon-reload
+sudo systemctl enable --now netwatchd.service
+```
+
+## Configuration
+
