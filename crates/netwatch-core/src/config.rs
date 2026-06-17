@@ -73,5 +73,42 @@ fn default_history_days() -> u32 {
 
 fn default_batch_write_interval() -> u64 {
     5
-
 }
+
+fn default_skip_loopback() -> bool {
+    true
+}
+
+impl Default for Config {
+    fn default() -> Self {
+        Self {
+            sample_interval: default_sample_interval(),
+            database: default_database(),
+            ignore: default_ignore(),
+            theme: default_theme(),
+            units: Units::default(),
+            history_days: default_history_days(),
+            batch_write_interval: default_batch_write_interval(),
+            skip_loopback: default_skip_loopback(),
+        }
+    }
+}
+
+impl Config {
+    pub fn load(path: Option<&Path>) -> Result<Self> {
+        let path = path
+            .map(PathBuf::from)
+            .unwrap_or_else(default_config_path);
+
+        if path.exists() {
+            let contents = fs::read_to_string(&path)?;
+            let mut config: Config = toml::from_str(&contents)
+                .map_err(|e| NetWatchError::Config(e.to_string()))?;
+            config.validate()?;
+            Ok(config)
+        } else {
+            let mut config = Config::default();
+            config.validate()?;
+            Ok(config)
+
+}}}
