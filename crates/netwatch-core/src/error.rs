@@ -13,4 +13,9 @@ pub enum NetWatchError {
     #[error("collection error: {0}")]
     Collection(String),
 
+    #[error("io error: {0}")]
+    Io(#[from] std::io::Error),
+
+    #[error("{0}")]
+    Other(String),
 }
