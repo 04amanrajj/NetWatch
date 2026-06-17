@@ -48,5 +48,31 @@ impl AlertKind {
     pub fn as_str(&self) -> &'static str {
         match self {
             Self::DatabaseCorruption => "database_corruption",
+            Self::InterfaceRemoved => "interface_removed",
+            Self::CounterOverflow => "counter_overflow",
+            Self::ClockJump => "clock_jump",
+        }
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum TimeRange {
+    Today,
+    Yesterday,
+    Last7Days,
+    Last30Days,
+    CurrentMonth,
+    PreviousMonth,
+    ThisYear,
+    Custom { start: i64, end: i64 },
+}
+
+impl TimeRange {
+    pub fn bounds(&self, now: DateTime<Utc>) -> (DateTime<Utc>, DateTime<Utc>) {
+        use chrono::{Datelike, Duration, TimeZone, Timelike};
+
+        let start_of_day = |dt: DateTime<Utc>| {
+            Utc.with_ymd_and_hms(dt.year(), dt.month(), dt.day(), 0, 0, 0)
+                .single()
 
 }}}
