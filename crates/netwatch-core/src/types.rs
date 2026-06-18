@@ -74,5 +74,30 @@ impl TimeRange {
         let start_of_day = |dt: DateTime<Utc>| {
             Utc.with_ymd_and_hms(dt.year(), dt.month(), dt.day(), 0, 0, 0)
                 .single()
+                .unwrap()
+        };
 
-}}}
+        match self {
+            Self::Today => {
+                let start = start_of_day(now);
+                (start, now)
+            }
+            Self::Yesterday => {
+                let y = now - Duration::days(1);
+                let start = start_of_day(y);
+                let end = start_of_day(now);
+                (start, end)
+            }
+            Self::Last7Days => (now - Duration::days(7), now),
+            Self::Last30Days => (now - Duration::days(30), now),
+            Self::CurrentMonth => {
+                let start = Utc
+                    .with_ymd_and_hms(now.year(), now.month(), 1, 0, 0, 0)
+                    .single()
+                    .unwrap();
+                (start, now)
+            }
+            Self::PreviousMonth => {
+                let first_this = Utc
+
+}}}}
