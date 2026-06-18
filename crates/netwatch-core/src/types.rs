@@ -99,5 +99,29 @@ impl TimeRange {
             }
             Self::PreviousMonth => {
                 let first_this = Utc
-
-}}}}
+                    .with_ymd_and_hms(now.year(), now.month(), 1, 0, 0, 0)
+                    .single()
+                    .unwrap();
+                let end = first_this;
+                let prev = end - Duration::days(1);
+                let start = Utc
+                    .with_ymd_and_hms(prev.year(), prev.month(), 1, 0, 0, 0)
+                    .single()
+                    .unwrap();
+                (start, end)
+            }
+            Self::ThisYear => {
+                let start = Utc
+                    .with_ymd_and_hms(now.year(), 1, 1, 0, 0, 0)
+                    .single()
+                    .unwrap();
+                (start, now)
+            }
+            Self::Custom { start, end } => {
+                let s = DateTime::from_timestamp(*start, 0).unwrap_or(now);
+                let e = DateTime::from_timestamp(*end, 0).unwrap_or(now);
+                (s, e)
+            }
+        }
+    }
+}
