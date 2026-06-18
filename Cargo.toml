@@ -34,3 +34,15 @@ tokio = { version = "1", features = ["full"] }
 toml = "0.8"
 tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+
+netwatch-core = { path = "crates/netwatch-core" }
+netwatch-collector = { path = "crates/netwatch-collector" }
+netwatch-stats = { path = "crates/netwatch-stats" }
+netwatch-db = { path = "crates/netwatch-db" }
+netwatch-export = { path = "crates/netwatch-export" }
+netwatch-tui = { path = "crates/netwatch-tui" }
+
+[profile.release]
+lto = true
+codegen-units = 1
+strip = true
