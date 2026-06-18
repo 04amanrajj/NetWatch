@@ -110,5 +110,43 @@ impl Config {
             let mut config = Config::default();
             config.validate()?;
             Ok(config)
+        }
+    }
+
+    pub fn validate(&mut self) -> Result<()> {
+        if self.sample_interval == 0 {
+            return Err(NetWatchError::Config(
+                "sample_interval must be at least 1 second".into(),
+            ));
+        }
+        if self.batch_write_interval == 0 {
+            self.batch_write_interval = 1;
+        }
+        Ok(())
+    }
+
+    pub fn database_path(&self) -> PathBuf {
+        expand_tilde(&self.database)
+    }
+
+    pub fn ignore_patterns(&self) -> Result<Vec<Pattern>> {
+        self.ignore
+            .iter()
+            .map(|p| {
+                Pattern::new(p).map_err(|e| {
+                    NetWatchError::Config(format!("invalid ignore pattern '{p}': {e}"))
+                })
+            })
+            .collect()
+    }
+
+    pub fn should_ignore(&self, name: &str) -> Result<bool> {
+        if self.skip_loopback && name == "lo" {
+            return Ok(true);
+        }
+        for pattern in self.ignore_patterns()? {
+            if pattern.matches(name) {
+                return Ok(true);
+            }
 
 }}}
