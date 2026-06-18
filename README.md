@@ -41,3 +41,18 @@ sudo systemctl enable --now netwatchd.service
 
 ## Configuration
 
+A configuration file is placed at `~/.config/netwatch/config.toml`:
+
+```toml
+sample_interval = 1
+database = "~/.local/share/netwatch/netwatch.db"
+ignore = ["docker*", "virbr*", "veth*"]
+theme = "default"
+units = "auto"
+history_days = 365
+batch_write_interval = 5
+```
+
+## License
+
+This project is licensed under the MIT License - see the LICENSE file for details.
