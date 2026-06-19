@@ -1,0 +1,5 @@
+[package]
+name = "netwatch-stats"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
