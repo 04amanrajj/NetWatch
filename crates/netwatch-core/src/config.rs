@@ -148,5 +148,41 @@ impl Config {
             if pattern.matches(name) {
                 return Ok(true);
             }
+        }
+        Ok(false)
+    }
+}
 
-}}}
+pub fn default_config_path() -> PathBuf {
+    expand_tilde("~/.config/netwatch/config.toml")
+}
+
+pub fn expand_tilde(path: &str) -> PathBuf {
+    if let Some(stripped) = path.strip_prefix("~/") {
+        if let Some(home) = dirs_home() {
+            return home.join(stripped);
+        }
+    }
+    PathBuf::from(path)
+}
+
+fn dirs_home() -> Option<PathBuf> {
+    std::env::var_os("HOME").map(PathBuf::from)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn expand_tilde_works() {
+        let expanded = expand_tilde("~/.config/netwatch/config.toml");
+        assert!(expanded.to_string_lossy().contains(".config/netwatch"));
+    }
+
+    #[test]
+    fn default_config_validates() {
+        let mut config = Config::default();
+        assert!(config.validate().is_ok());
+    }
+}
