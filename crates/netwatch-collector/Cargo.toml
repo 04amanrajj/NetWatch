@@ -3,3 +3,8 @@ name = "netwatch-collector"
 version.workspace = true
 edition.workspace = true
 license.workspace = true
+description = "Network interface counter collection for NetWatch"
+
+[dependencies]
+anyhow.workspace = true
+chrono.workspace = true
