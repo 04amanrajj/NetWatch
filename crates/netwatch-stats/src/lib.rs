@@ -34,5 +34,39 @@ pub fn compute_rate(
 ) -> RateSample {
     let ts = snapshot.timestamp.timestamp();
     let Some(prev) = prev else {
+        return RateSample {
+            rx_rate: 0,
+            tx_rate: 0,
+            anomaly: None,
+        };
+    };
 
-}}
+    if ts < prev.ts {
+        return RateSample {
+            rx_rate: 0,
+            tx_rate: 0,
+            anomaly: Some(AlertKind::ClockJump),
+        };
+    }
+
+    let dt = (ts - prev.ts).max(1) as u64;
+    let (rx_delta, rx_anomaly) = byte_delta(prev.rx_bytes, snapshot.rx_bytes);
+    let (tx_delta, tx_anomaly) = byte_delta(prev.tx_bytes, snapshot.tx_bytes);
+
+    let anomaly = rx_anomaly.or(tx_anomaly);
+
+    RateSample {
+        rx_rate: rx_delta / dt,
+        tx_rate: tx_delta / dt,
+        anomaly,
+    }
+}
+
+fn byte_delta(prev: u64, curr: u64) -> (u64, Option<AlertKind>) {
+    if curr >= prev {
+        (curr - prev, None)
+    } else {
+        // Counter reset or wrap — treat curr as new baseline
+        (curr, Some(AlertKind::CounterOverflow))
+    }
+}
