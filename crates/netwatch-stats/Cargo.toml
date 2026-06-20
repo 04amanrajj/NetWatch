@@ -3,3 +3,9 @@ name = "netwatch-stats"
 version.workspace = true
 edition.workspace = true
 license.workspace = true
+description = "Rate calculation and unit formatting for NetWatch"
+
+[dependencies]
+chrono.workspace = true
+netwatch-core.workspace = true
+thiserror.workspace = true
