@@ -36,5 +36,24 @@ impl<'a> SysfsCollector<'a> {
             let tx_bytes = read_u64_file(&iface_dir.join("statistics/tx_bytes"))?;
             let mac = fs::read_to_string(iface_dir.join("address"))
                 .ok()
+                .map(|s| s.trim().to_string())
+                .filter(|s| !s.is_empty() && s != "00:00:00:00:00:00");
+            let operstate = fs::read_to_string(iface_dir.join("operstate"))
+                .map(|s| OperState::from_str(&s))
+                .unwrap_or(OperState::Unknown);
 
-}}}
+            snapshots.push(InterfaceSnapshot {
+                name,
+                mac,
+                rx_bytes,
+                tx_bytes,
+                operstate,
+                timestamp: Utc::now(),
+            });
+        }
+
+        snapshots.sort_by(|a, b| a.name.cmp(&b.name));
+        Ok(snapshots)
+    }
+
+}
