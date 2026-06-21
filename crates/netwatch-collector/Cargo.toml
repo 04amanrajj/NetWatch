@@ -8,3 +8,9 @@ description = "Network interface counter collection for NetWatch"
 [dependencies]
 anyhow.workspace = true
 chrono.workspace = true
+netwatch-core.workspace = true
+thiserror.workspace = true
+tracing.workspace = true
+
+[dev-dependencies]
+tempfile = "3"
