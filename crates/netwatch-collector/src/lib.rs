@@ -20,5 +20,14 @@ pub fn collect_from_root(config: &Config, root: &Path) -> Result<Vec<InterfaceSn
     } else {
         proc_net::collect_from_proc(config, &root.join("proc/net/dev"))
     }
-
 }
+
+pub fn collect_live(config: &Config) -> Result<Vec<InterfaceSnapshot>> {
+    collect_interfaces(config)
+}
+
+#[cfg(test)]
+pub fn snapshot_from_parts(
+    name: &str,
+    mac: Option<&str>,
+    rx: u64,
