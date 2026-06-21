@@ -70,3 +70,41 @@ fn byte_delta(prev: u64, curr: u64) -> (u64, Option<AlertKind>) {
         (curr, Some(AlertKind::CounterOverflow))
     }
 }
+
+pub fn compute_samples(
+    snapshots: &[InterfaceSnapshot],
+    previous: &mut HashMap<String, PreviousSample>,
+) -> Vec<ComputedSample> {
+    snapshots
+        .iter()
+        .map(|snap| {
+            let prev = previous.get(&snap.name);
+            let rate = compute_rate(prev, snap);
+            previous.insert(
+                snap.name.clone(),
+                PreviousSample {
+                    ts: snap.timestamp.timestamp(),
+                    rx_bytes: snap.rx_bytes,
+                    tx_bytes: snap.tx_bytes,
+                },
+            );
+            ComputedSample {
+                interface: snap.name.clone(),
+                ts: snap.timestamp.timestamp(),
+                rx_bytes: snap.rx_bytes,
+                tx_bytes: snap.tx_bytes,
+                rx_rate: rate.rx_rate,
+                tx_rate: rate.tx_rate,
+                anomaly: rate.anomaly,
+            }
+        })
+        .collect()
+}
+
+pub fn format_bytes(value: u64, units: Units) -> String {
+    match units {
+        Units::Bits => format_bits(value.saturating_mul(8)),
+        Units::Bytes => format_size(value),
+        Units::Auto => format_size(value),
+
+}}
