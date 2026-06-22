@@ -31,3 +31,15 @@ pub fn snapshot_from_parts(
     name: &str,
     mac: Option<&str>,
     rx: u64,
+    tx: u64,
+    state: OperState,
+) -> InterfaceSnapshot {
+    InterfaceSnapshot {
+        name: name.into(),
+        mac: mac.map(String::from),
+        rx_bytes: rx,
+        tx_bytes: tx,
+        operstate: state,
+        timestamp: Utc::now(),
+    }
+}
