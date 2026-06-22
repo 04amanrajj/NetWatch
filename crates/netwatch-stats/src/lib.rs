@@ -106,5 +106,41 @@ pub fn format_bytes(value: u64, units: Units) -> String {
         Units::Bits => format_bits(value.saturating_mul(8)),
         Units::Bytes => format_size(value),
         Units::Auto => format_size(value),
+    }
+}
+
+pub fn format_rate(bytes_per_sec: u64, units: Units) -> String {
+    match units {
+        Units::Bits => format!("{}/s", format_bits(bytes_per_sec.saturating_mul(8))),
+        Units::Bytes | Units::Auto => format!("{}/s", format_size(bytes_per_sec)),
+    }
+}
+
+fn format_size(bytes: u64) -> String {
+    const UNITS: [&str; 5] = ["B", "KB", "MB", "GB", "TB"];
+    let mut value = bytes as f64;
+    let mut idx = 0;
+    while value >= 1024.0 && idx < UNITS.len() - 1 {
+        value /= 1024.0;
+        idx += 1;
+    }
+    if idx == 0 {
+        format!("{} {}", bytes, UNITS[0])
+    } else {
+        format!("{:.2} {}", value, UNITS[idx])
+    }
+}
+
+fn format_bits(bits: u64) -> String {
+    const UNITS: [&str; 5] = ["b", "Kb", "Mb", "Gb", "Tb"];
+    let mut value = bits as f64;
+    let mut idx = 0;
+    while value >= 1000.0 && idx < UNITS.len() - 1 {
+        value /= 1000.0;
+        idx += 1;
+    }
+    if idx == 0 {
+        format!("{} {}", bits, UNITS[0])
+    } else {
 
 }}
