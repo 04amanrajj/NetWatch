@@ -55,5 +55,22 @@ impl<'a> SysfsCollector<'a> {
         snapshots.sort_by(|a, b| a.name.cmp(&b.name));
         Ok(snapshots)
     }
+}
 
+fn read_u64_file(path: &Path) -> Result<u64> {
+    let contents = fs::read_to_string(path).map_err(|e| {
+        netwatch_core::NetWatchError::Collection(format!(
+            "failed to read {}: {e}",
+            path.display()
+        ))
+    })?;
+    contents
+        .trim()
+        .parse()
+        .map_err(|e| {
+            netwatch_core::NetWatchError::Collection(format!(
+                "invalid counter in {}: {e}",
+                path.display()
+            ))
+        })
 }
