@@ -36,5 +36,16 @@ pub fn collect_from_proc(config: &Config, proc_path: &Path) -> Result<Vec<Interf
             netwatch_core::NetWatchError::Collection(format!("invalid tx_bytes for {name}"))
         })?;
 
+        snapshots.push(InterfaceSnapshot {
+            name: name.to_string(),
+            mac: None,
+            rx_bytes,
+            tx_bytes,
+            operstate: OperState::Unknown,
+            timestamp: Utc::now(),
+        });
+    }
 
-}}
+    snapshots.sort_by(|a, b| a.name.cmp(&b.name));
+    Ok(snapshots)
+}
