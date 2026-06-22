@@ -23,5 +23,18 @@ pub fn collect_from_proc(config: &Config, proc_path: &Path) -> Result<Vec<Interf
             .ok_or_else(|| netwatch_core::NetWatchError::Collection("invalid /proc/net/dev line".into()))?;
         let name = name.trim();
         if config.should_ignore(name)? {
+            continue;
+        }
+        let fields: Vec<&str> = rest.split_whitespace().collect();
+        if fields.len() < 16 {
+            continue;
+        }
+        let rx_bytes: u64 = fields[0].parse().map_err(|_| {
+            netwatch_core::NetWatchError::Collection(format!("invalid rx_bytes for {name}"))
+        })?;
+        let tx_bytes: u64 = fields[8].parse().map_err(|_| {
+            netwatch_core::NetWatchError::Collection(format!("invalid tx_bytes for {name}"))
+        })?;
 
-}}}
+
+}}
