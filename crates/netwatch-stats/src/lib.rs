@@ -142,5 +142,41 @@ fn format_bits(bits: u64) -> String {
     if idx == 0 {
         format!("{} {}", bits, UNITS[0])
     } else {
+        format!("{:.2} {}", value, UNITS[idx])
+    }
+}
+
+pub fn day_bounds(now: DateTime<Utc>) -> (DateTime<Utc>, DateTime<Utc>) {
+    use chrono::{Datelike, TimeZone, Timelike};
+    let start = Utc
+        .with_ymd_and_hms(now.year(), now.month(), now.day(), 0, 0, 0)
+        .single()
+        .unwrap();
+    (start, now)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use chrono::TimeZone;
+
+    fn snap(name: &str, rx: u64, tx: u64, ts: i64) -> InterfaceSnapshot {
+        InterfaceSnapshot {
+            name: name.into(),
+            mac: None,
+            rx_bytes: rx,
+            tx_bytes: tx,
+            operstate: netwatch_core::OperState::Up,
+            timestamp: Utc.timestamp_opt(ts, 0).single().unwrap(),
+        }
+    }
+
+    #[test]
+    fn computes_rate_from_delta() {
+        let prev = PreviousSample {
+            ts: 100,
+            rx_bytes: 1000,
+            tx_bytes: 500,
+        };
 
 }}
