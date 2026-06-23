@@ -1,0 +1,7 @@
+[package]
+name = "netwatch-db"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+description = "SQLite storage layer for NetWatch"
+
