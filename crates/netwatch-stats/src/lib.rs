@@ -178,5 +178,40 @@ mod tests {
             rx_bytes: 1000,
             tx_bytes: 500,
         };
+        let snap = snap("eth0", 2000, 700, 101);
+        let rate = compute_rate(Some(&prev), &snap);
+        assert_eq!(rate.rx_rate, 1000);
+        assert_eq!(rate.tx_rate, 200);
+        assert!(rate.anomaly.is_none());
+    }
 
-}}
+    #[test]
+    fn detects_clock_jump() {
+        let prev = PreviousSample {
+            ts: 200,
+            rx_bytes: 1000,
+            tx_bytes: 500,
+        };
+        let snap = snap("eth0", 2000, 700, 100);
+        let rate = compute_rate(Some(&prev), &snap);
+        assert_eq!(rate.anomaly, Some(AlertKind::ClockJump));
+    }
+
+    #[test]
+    fn detects_counter_overflow() {
+        let prev = PreviousSample {
+            ts: 100,
+            rx_bytes: 5000,
+            tx_bytes: 500,
+        };
+        let snap = snap("eth0", 100, 700, 101);
+        let rate = compute_rate(Some(&prev), &snap);
+        assert_eq!(rate.anomaly, Some(AlertKind::CounterOverflow));
+    }
+
+    #[test]
+    fn formats_auto_units() {
+        assert!(format_bytes(1024, Units::Auto).contains("KB"));
+        assert!(format_rate(1024 * 1024, Units::Auto).contains("MB"));
+    }
+}
