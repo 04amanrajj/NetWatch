@@ -18,3 +18,23 @@ CREATE TABLE IF NOT EXISTS samples_raw (
     PRIMARY KEY (ts, interface_id),
     FOREIGN KEY (interface_id) REFERENCES interfaces(id)
 );
+
+CREATE TABLE IF NOT EXISTS samples_minute (
+    ts INTEGER NOT NULL,
+    interface_id INTEGER NOT NULL,
+    rx_bytes INTEGER NOT NULL,
+    tx_bytes INTEGER NOT NULL,
+    rx_rate_avg INTEGER NOT NULL DEFAULT 0,
+    tx_rate_avg INTEGER NOT NULL DEFAULT 0,
+    rx_rate_max INTEGER NOT NULL DEFAULT 0,
+    tx_rate_max INTEGER NOT NULL DEFAULT 0,
+    PRIMARY KEY (ts, interface_id),
+    FOREIGN KEY (interface_id) REFERENCES interfaces(id)
+);
+
+CREATE TABLE IF NOT EXISTS samples_hourly (
+    ts INTEGER NOT NULL,
+    interface_id INTEGER NOT NULL,
+    rx_bytes INTEGER NOT NULL,
+    tx_bytes INTEGER NOT NULL,
+    rx_rate_avg INTEGER NOT NULL DEFAULT 0,
