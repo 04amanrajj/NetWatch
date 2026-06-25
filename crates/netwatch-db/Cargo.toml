@@ -5,3 +5,10 @@ edition.workspace = true
 license.workspace = true
 description = "SQLite storage layer for NetWatch"
 
+[dependencies]
+anyhow.workspace = true
+chrono.workspace = true
+netwatch-core.workspace = true
+netwatch-stats.workspace = true
+serde.workspace = true
+sqlx.workspace = true
