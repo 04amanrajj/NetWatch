@@ -88,5 +88,95 @@ async fn latest_rates(pool: &SqlitePool, interface_id: i64) -> Result<(u64, u64)
     Ok(row
         .map(|r| {
             (
+                r.get::<Option<i64>, _>("rx_rate").unwrap_or(0).max(0) as u64,
+                r.get::<Option<i64>, _>("tx_rate").unwrap_or(0).max(0) as u64,
+            )
+        })
+        .unwrap_or((0, 0)))
+}
+
+async fn sum_range(
+    pool: &SqlitePool,
+    start: i64,
+    end: i64,
+    interface_id: Option<i64>,
+) -> Result<Totals> {
+    let mut download: u64 = 0;
+    let mut upload: u64 = 0;
+
+    if end - start <= 86400 {
+        let (dl, ul) = delta_from_raw(pool, start, end, interface_id).await?;
+        download += dl;
+        upload += ul;
+    }
+
+    if download == 0 && upload == 0 {
+        let (dl, ul) = sum_aggregated(pool, "samples_minute", start, end, interface_id).await?;
+        download += dl;
+        upload += ul;
+    }
+    if download == 0 && upload == 0 {
+        let (dl, ul) = sum_aggregated(pool, "samples_hourly", start, end, interface_id).await?;
+        download += dl;
+        upload += ul;
+    }
+    if download == 0 && upload == 0 {
+        let (dl, ul) = sum_aggregated(pool, "samples_daily", start, end, interface_id).await?;
+        download += dl;
+        upload += ul;
+    }
+
+    let speeds = if interface_id.is_none() {
+        current_speeds(pool).await?
+    } else if let Some(id) = interface_id {
+        let (rx, tx) = latest_rates(pool, id).await?;
+        Totals {
+            download: 0,
+            upload: 0,
+            rx_rate: rx,
+            tx_rate: tx,
+        }
+    } else {
+        Totals::default()
+    };
+
+    Ok(Totals {
+        download,
+        upload,
+        rx_rate: speeds.rx_rate,
+        tx_rate: speeds.tx_rate,
+    })
+}
+
+async fn delta_from_raw(
+    pool: &SqlitePool,
+    start: i64,
+    end: i64,
+    interface_id: Option<i64>,
+) -> Result<(u64, u64)> {
+    let query = if let Some(id) = interface_id {
+        sqlx::query(
+            r#"
+            SELECT
+                COALESCE(MAX(rx_bytes) - MIN(rx_bytes), 0) AS dl,
+                COALESCE(MAX(tx_bytes) - MIN(tx_bytes), 0) AS ul
+            FROM samples_raw
+            WHERE interface_id = ?1 AND ts BETWEEN ?2 AND ?3
+            "#,
+        )
+        .bind(id)
+        .bind(start)
+        .bind(end)
+        .fetch_one(pool)
+        .await?
+    } else {
+        sqlx::query(
+            r#"
+            SELECT
+                COALESCE(SUM(dl), 0) AS dl,
+                COALESCE(SUM(ul), 0) AS ul
+            FROM (
+                SELECT
+                    MAX(rx_bytes) - MIN(rx_bytes) AS dl,
 
 }}
