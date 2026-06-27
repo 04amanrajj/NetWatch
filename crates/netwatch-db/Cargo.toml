@@ -12,3 +12,10 @@ netwatch-core.workspace = true
 netwatch-stats.workspace = true
 serde.workspace = true
 sqlx.workspace = true
+thiserror.workspace = true
+tokio.workspace = true
+tracing.workspace = true
+
+[dev-dependencies]
+tempfile = "3"
+tokio = { workspace = true, features = ["rt-multi-thread", "macros"] }
