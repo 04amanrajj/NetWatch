@@ -43,5 +43,28 @@ pub struct AlertRow {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct InterfaceStats {
+    pub id: i64,
+    pub name: String,
+    pub mac: Option<String>,
+    pub operstate: String,
+    pub download: u64,
+    pub upload: u64,
+    pub rx_rate: u64,
+    pub tx_rate: u64,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct Totals {
+    pub download: u64,
+    pub upload: u64,
+    pub rx_rate: u64,
+    pub tx_rate: u64,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct DaemonStatus {
+    pub running: bool,
+    pub pid: Option<i64>,
+    pub last_heartbeat: Option<DateTime<Utc>>,
 
 }
