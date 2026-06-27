@@ -17,5 +17,24 @@ async fn aggregate_raw_to_minute(pool: &SqlitePool) -> Result<()> {
             interface_id,
             MAX(rx_bytes) - MIN(rx_bytes) AS rx_delta,
             MAX(tx_bytes) - MIN(tx_bytes) AS tx_delta,
+            COALESCE(AVG(rx_rate), 0),
+            COALESCE(AVG(tx_rate), 0),
+            COALESCE(MAX(rx_rate), 0),
+            COALESCE(MAX(tx_rate), 0)
+        FROM samples_raw
+        WHERE ts >= (strftime('%s', 'now') - 86400)
+        GROUP BY bucket, interface_id
+        "#,
+    )
+    .execute(pool)
+    .await?;
+    Ok(())
+}
+
+async fn aggregate_minute_to_hourly(pool: &SqlitePool) -> Result<()> {
+    sqlx::query(
+        r#"
+        INSERT OR IGNORE INTO samples_hourly (ts, interface_id, rx_bytes, tx_bytes, rx_rate_avg, tx_rate_avg, rx_rate_max, tx_rate_max)
+        SELECT
 
 }
