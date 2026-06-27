@@ -100,5 +100,56 @@ impl Database {
         .execute(&self.pool)
         .await?;
         Ok(())
+    }
 
-}}
+    pub async fn get_meta(&self, key: &str) -> Result<Option<String>> {
+        let row = sqlx::query("SELECT value FROM daemon_meta WHERE key = ?1")
+            .bind(key)
+            .fetch_optional(&self.pool)
+            .await?;
+        Ok(row.map(|r| r.get::<String, _>("value")))
+    }
+
+    pub async fn upsert_interface(
+        &self,
+        name: &str,
+        mac: Option<&str>,
+        ts: i64,
+    ) -> Result<i64> {
+        if let Some(existing) = sqlx::query_as::<_, InterfaceRow>(
+            "SELECT id, name, mac, first_seen, last_seen FROM interfaces WHERE name = ?1",
+        )
+        .bind(name)
+        .fetch_optional(&self.pool)
+        .await?
+        {
+            sqlx::query("UPDATE interfaces SET last_seen = ?1, mac = COALESCE(?2, mac) WHERE id = ?3")
+                .bind(ts)
+                .bind(mac)
+                .bind(existing.id)
+                .execute(&self.pool)
+                .await?;
+            return Ok(existing.id);
+        }
+
+        let result = sqlx::query(
+            "INSERT INTO interfaces (name, mac, first_seen, last_seen) VALUES (?1, ?2, ?3, ?3)",
+        )
+        .bind(name)
+        .bind(mac)
+        .bind(ts)
+        .execute(&self.pool)
+        .await?;
+
+        Ok(result.last_insert_rowid())
+    }
+
+    pub async fn ingest_samples(
+        &self,
+        snapshots: &[ComputedSample],
+        macs: &[(String, Option<String>)],
+    ) -> Result<()> {
+        let mut tx = self.pool.begin().await?;
+        for sample in snapshots {
+
+}}}
