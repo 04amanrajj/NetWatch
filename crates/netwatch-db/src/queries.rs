@@ -178,5 +178,96 @@ async fn delta_from_raw(
             FROM (
                 SELECT
                     MAX(rx_bytes) - MIN(rx_bytes) AS dl,
+                    MAX(tx_bytes) - MIN(tx_bytes) AS ul
+                FROM samples_raw
+                WHERE ts BETWEEN ?1 AND ?2
+                GROUP BY interface_id
+            )
+            "#,
+        )
+        .bind(start)
+        .bind(end)
+        .fetch_one(pool)
+        .await?
+    };
 
-}}
+    Ok((
+        query.get::<i64, _>("dl").max(0) as u64,
+        query.get::<i64, _>("ul").max(0) as u64,
+    ))
+}
+
+async fn sum_aggregated(
+    pool: &SqlitePool,
+    table: &str,
+    start: i64,
+    end: i64,
+    interface_id: Option<i64>,
+) -> Result<(u64, u64)> {
+    let sql = if interface_id.is_some() {
+        format!(
+            "SELECT COALESCE(SUM(rx_bytes), 0) AS dl, COALESCE(SUM(tx_bytes), 0) AS ul
+             FROM {table} WHERE interface_id = ?1 AND ts BETWEEN ?2 AND ?3"
+        )
+    } else {
+        format!(
+            "SELECT COALESCE(SUM(rx_bytes), 0) AS dl, COALESCE(SUM(tx_bytes), 0) AS ul
+             FROM {table} WHERE ts BETWEEN ?1 AND ?2"
+        )
+    };
+
+    let row = if let Some(id) = interface_id {
+        sqlx::query(&sql)
+            .bind(id)
+            .bind(start)
+            .bind(end)
+            .fetch_one(pool)
+            .await?
+    } else {
+        sqlx::query(&sql).bind(start).bind(end).fetch_one(pool).await?
+    };
+
+    Ok((
+        row.get::<i64, _>("dl").max(0) as u64,
+        row.get::<i64, _>("ul").max(0) as u64,
+    ))
+}
+
+pub async fn interface_detail(pool: &SqlitePool, interface_id: i64) -> Result<InterfaceDetail> {
+    let iface = sqlx::query_as::<_, InterfaceRow>(
+        "SELECT id, name, mac, first_seen, last_seen FROM interfaces WHERE id = ?1",
+    )
+    .bind(interface_id)
+    .fetch_one(pool)
+    .await?;
+
+    let now = Utc::now();
+    let (today_start, _) = day_bounds(now);
+    let yesterday_start = today_start - chrono::Duration::days(1);
+    let week_start = now - chrono::Duration::days(7);
+    let last_week_start = now - chrono::Duration::days(14);
+    let month_start = Utc
+        .with_ymd_and_hms(now.year(), now.month(), 1, 0, 0, 0)
+        .single()
+        .unwrap();
+    let prev_month_end = month_start;
+    let prev_month_start = prev_month_end - chrono::Duration::days(1);
+    let prev_month_start = Utc
+        .with_ymd_and_hms(
+            prev_month_start.year(),
+            prev_month_start.month(),
+            1,
+            0,
+            0,
+            0,
+        )
+        .single()
+        .unwrap();
+    let year_start = Utc
+        .with_ymd_and_hms(now.year(), 1, 1, 0, 0, 0)
+        .single()
+        .unwrap();
+
+    let today = sum_range(pool, today_start.timestamp(), now.timestamp(), Some(interface_id)).await?;
+
+}
