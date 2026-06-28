@@ -14,4 +14,10 @@ pub async fn apply_retention(pool: &SqlitePool) -> Result<()> {
         .execute(pool)
         .await?;
 
+    sqlx::query("DELETE FROM samples_minute WHERE ts < ?1")
+        .bind(minute_cutoff)
+        .execute(pool)
+        .await?;
+
+    Ok(())
 }
