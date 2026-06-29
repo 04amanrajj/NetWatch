@@ -269,5 +269,95 @@ pub async fn interface_detail(pool: &SqlitePool, interface_id: i64) -> Result<In
         .unwrap();
 
     let today = sum_range(pool, today_start.timestamp(), now.timestamp(), Some(interface_id)).await?;
+    let yesterday = sum_range(
+        pool,
+        yesterday_start.timestamp(),
+        today_start.timestamp(),
+        Some(interface_id),
+    )
+    .await?;
+    let this_week = sum_range(pool, week_start.timestamp(), now.timestamp(), Some(interface_id)).await?;
+    let last_week = sum_range(
+        pool,
+        last_week_start.timestamp(),
+        week_start.timestamp(),
+        Some(interface_id),
+    )
+    .await?;
+    let this_month = sum_range(pool, month_start.timestamp(), now.timestamp(), Some(interface_id)).await?;
+    let last_month = sum_range(
+        pool,
+        prev_month_start.timestamp(),
+        prev_month_end.timestamp(),
+        Some(interface_id),
+    )
+    .await?;
+    let this_year = sum_range(pool, year_start.timestamp(), now.timestamp(), Some(interface_id)).await?;
+    let total = sum_range(pool, iface.first_seen, now.timestamp(), Some(interface_id)).await?;
+    let (cur_rx, cur_tx) = latest_rates(pool, interface_id).await?;
 
+    let peak = sqlx::query(
+        "SELECT COALESCE(MAX(rx_rate), 0) AS prx, COALESCE(MAX(tx_rate), 0) AS ptx FROM samples_raw WHERE interface_id = ?1",
+    )
+    .bind(interface_id)
+    .fetch_one(pool)
+    .await?;
+
+    let avg = sqlx::query(
+        "SELECT COALESCE(AVG(rx_rate), 0) AS arx, COALESCE(AVG(tx_rate), 0) AS atx FROM samples_raw WHERE interface_id = ?1 AND ts >= ?2",
+    )
+    .bind(interface_id)
+    .bind(today_start.timestamp())
+    .fetch_one(pool)
+    .await?;
+
+    Ok(InterfaceDetail {
+        name: iface.name,
+        current_rx_rate: cur_rx,
+        current_tx_rate: cur_tx,
+        peak_rx_rate: peak.get::<i64, _>("prx").max(0) as u64,
+        peak_tx_rate: peak.get::<i64, _>("ptx").max(0) as u64,
+        avg_rx_rate: avg.get::<i64, _>("arx").max(0) as u64,
+        avg_tx_rate: avg.get::<i64, _>("atx").max(0) as u64,
+        today_download: today.download,
+        today_upload: today.upload,
+        yesterday_download: yesterday.download,
+        yesterday_upload: yesterday.upload,
+        this_week_download: this_week.download,
+        this_week_upload: this_week.upload,
+        last_week_download: last_week.download,
+        last_week_upload: last_week.upload,
+        this_month_download: this_month.download,
+        this_month_upload: this_month.upload,
+        last_month_download: last_month.download,
+        last_month_upload: last_month.upload,
+        this_year_download: this_year.download,
+        this_year_upload: this_year.upload,
+        total_download: total.download,
+        total_upload: total.upload,
+    })
 }
+
+pub async fn history_table(pool: &SqlitePool, start_ts: i64, end_ts: i64) -> Result<Vec<HistoryEntry>> {
+    let rows = sqlx::query(
+        r#"
+        SELECT
+            ts,
+            SUM(rx_bytes) AS dl,
+            SUM(tx_bytes) AS ul,
+            MAX(rx_rate_max) AS pdl,
+            MAX(tx_rate_max) AS pul
+        FROM samples_daily
+        WHERE ts BETWEEN ?1 AND ?2
+        GROUP BY ts
+        ORDER BY ts
+        "#,
+    )
+    .bind(start_ts)
+    .bind(end_ts)
+    .fetch_all(pool)
+    .await?;
+
+    if rows.is_empty() {
+
+}}
