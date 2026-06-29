@@ -151,5 +151,56 @@ impl Database {
     ) -> Result<()> {
         let mut tx = self.pool.begin().await?;
         for sample in snapshots {
+            let mac = macs
+                .iter()
+                .find(|(n, _)| n == &sample.interface)
+                .and_then(|(_, m)| m.as_deref());
+            let iface_id = self
+                .upsert_interface_in_tx(&mut tx, &sample.interface, mac, sample.ts)
+                .await?;
 
-}}}
+            sqlx::query(
+                "INSERT OR REPLACE INTO samples_raw (ts, interface_id, rx_bytes, tx_bytes, rx_rate, tx_rate)
+                 VALUES (?1, ?2, ?3, ?4, ?5, ?6)",
+            )
+            .bind(sample.ts)
+            .bind(iface_id)
+            .bind(sample.rx_bytes as i64)
+            .bind(sample.tx_bytes as i64)
+            .bind(sample.rx_rate as i64)
+            .bind(sample.tx_rate as i64)
+            .execute(&mut *tx)
+            .await?;
+        }
+        tx.commit().await?;
+        Ok(())
+    }
+
+    async fn upsert_interface_in_tx(
+        &self,
+        tx: &mut sqlx::Transaction<'_, sqlx::Sqlite>,
+        name: &str,
+        mac: Option<&str>,
+        ts: i64,
+    ) -> Result<i64> {
+        if let Some(existing) = sqlx::query_as::<_, InterfaceRow>(
+            "SELECT id, name, mac, first_seen, last_seen FROM interfaces WHERE name = ?1",
+        )
+        .bind(name)
+        .fetch_optional(&mut **tx)
+        .await?
+        {
+            sqlx::query("UPDATE interfaces SET last_seen = ?1, mac = COALESCE(?2, mac) WHERE id = ?3")
+                .bind(ts)
+                .bind(mac)
+                .bind(existing.id)
+                .execute(&mut **tx)
+                .await?;
+            return Ok(existing.id);
+        }
+
+        let result = sqlx::query(
+            "INSERT INTO interfaces (name, mac, first_seen, last_seen) VALUES (?1, ?2, ?3, ?3)",
+        )
+
+}}
