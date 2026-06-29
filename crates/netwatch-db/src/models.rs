@@ -66,5 +66,28 @@ pub struct DaemonStatus {
     pub running: bool,
     pub pid: Option<i64>,
     pub last_heartbeat: Option<DateTime<Utc>>,
+    pub sample_interval: Option<u64>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct HistoryEntry {
+    pub date: String,
+    pub download: u64,
+    pub upload: u64,
+    pub total: u64,
+    pub peak_download: u64,
+    pub peak_upload: u64,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct GraphPoint {
+    pub ts: i64,
+    pub rx_rate: u64,
+    pub tx_rate: u64,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct InterfaceDetail {
+    pub name: String,
 
 }
