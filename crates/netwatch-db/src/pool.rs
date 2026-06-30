@@ -202,5 +202,56 @@ impl Database {
         let result = sqlx::query(
             "INSERT INTO interfaces (name, mac, first_seen, last_seen) VALUES (?1, ?2, ?3, ?3)",
         )
+        .bind(name)
+        .bind(mac)
+        .bind(ts)
+        .execute(&mut **tx)
+        .await?;
 
-}}
+        Ok(result.last_insert_rowid())
+    }
+
+    pub async fn insert_alert(&self, ts: i64, kind: &str, message: &str) -> Result<()> {
+        sqlx::query(
+            "INSERT INTO alerts (ts, kind, message, acknowledged) VALUES (?1, ?2, ?3, 0)",
+        )
+        .bind(ts)
+        .bind(kind)
+        .bind(message)
+        .execute(&self.pool)
+        .await?;
+        Ok(())
+    }
+
+    pub async fn run_aggregation(&self) -> Result<()> {
+        aggregation::aggregate_all(&self.pool).await
+    }
+
+    pub async fn run_retention(&self) -> Result<()> {
+        retention::apply_retention(&self.pool).await
+    }
+
+    pub async fn list_interfaces(&self) -> Result<Vec<InterfaceRow>> {
+        queries::list_interfaces(&self.pool).await
+    }
+
+    pub async fn today_totals(&self) -> Result<Totals> {
+        queries::today_totals(&self.pool).await
+    }
+
+    pub async fn current_speeds(&self) -> Result<Totals> {
+        queries::current_speeds(&self.pool).await
+    }
+
+    pub async fn interface_stats_today(&self) -> Result<Vec<InterfaceStats>> {
+        queries::interface_stats_today(&self.pool).await
+    }
+
+    pub async fn interface_detail(&self, interface_id: i64) -> Result<InterfaceDetail> {
+        queries::interface_detail(&self.pool, interface_id).await
+    }
+
+    pub async fn history_table(
+        &self,
+
+}
