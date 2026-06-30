@@ -359,5 +359,95 @@ pub async fn history_table(pool: &SqlitePool, start_ts: i64, end_ts: i64) -> Res
     .await?;
 
     if rows.is_empty() {
+        return history_from_hourly(pool, start_ts, end_ts).await;
+    }
 
-}}
+    Ok(rows
+        .into_iter()
+        .map(|r| {
+            let dl = r.get::<i64, _>("dl").max(0) as u64;
+            let ul = r.get::<i64, _>("ul").max(0) as u64;
+            let ts = r.get::<i64, _>("ts");
+            HistoryEntry {
+                date: format_date(ts),
+                download: dl,
+                upload: ul,
+                total: dl + ul,
+                peak_download: r.get::<i64, _>("pdl").max(0) as u64,
+                peak_upload: r.get::<i64, _>("pul").max(0) as u64,
+            }
+        })
+        .collect())
+}
+
+async fn history_from_hourly(pool: &SqlitePool, start_ts: i64, end_ts: i64) -> Result<Vec<HistoryEntry>> {
+    let rows = sqlx::query(
+        r#"
+        SELECT
+            (ts / 86400) * 86400 AS day_ts,
+            SUM(rx_bytes) AS dl,
+            SUM(tx_bytes) AS ul,
+            MAX(rx_rate_max) AS pdl,
+            MAX(tx_rate_max) AS pul
+        FROM samples_hourly
+        WHERE ts BETWEEN ?1 AND ?2
+        GROUP BY day_ts
+        ORDER BY day_ts
+        "#,
+    )
+    .bind(start_ts)
+    .bind(end_ts)
+    .fetch_all(pool)
+    .await?;
+
+    Ok(rows
+        .into_iter()
+        .map(|r| {
+            let dl = r.get::<i64, _>("dl").max(0) as u64;
+            let ul = r.get::<i64, _>("ul").max(0) as u64;
+            HistoryEntry {
+                date: format_date(r.get::<i64, _>("day_ts")),
+                download: dl,
+                upload: ul,
+                total: dl + ul,
+                peak_download: r.get::<i64, _>("pdl").max(0) as u64,
+                peak_upload: r.get::<i64, _>("pul").max(0) as u64,
+            }
+        })
+        .collect())
+}
+
+pub async fn graph_series(
+    pool: &SqlitePool,
+    start_ts: i64,
+    end_ts: i64,
+    interface_id: Option<i64>,
+) -> Result<Vec<GraphPoint>> {
+    let span = end_ts - start_ts;
+    let table = if span <= 86400 {
+        "samples_raw"
+    } else if span <= 604800 {
+        "samples_minute"
+    } else {
+        "samples_hourly"
+    };
+
+    let sql = if table == "samples_raw" {
+        if interface_id.is_some() {
+            "SELECT ts, COALESCE(rx_rate, 0) AS rx, COALESCE(tx_rate, 0) AS tx FROM samples_raw WHERE interface_id = ?1 AND ts BETWEEN ?2 AND ?3 ORDER BY ts".to_string()
+        } else {
+            "SELECT ts, COALESCE(SUM(rx_rate), 0) AS rx, COALESCE(SUM(tx_rate), 0) AS tx FROM samples_raw WHERE ts BETWEEN ?1 AND ?2 GROUP BY ts ORDER BY ts".to_string()
+        }
+    } else if interface_id.is_some() {
+        format!("SELECT ts, rx_rate_avg AS rx, tx_rate_avg AS tx FROM {table} WHERE interface_id = ?1 AND ts BETWEEN ?2 AND ?3 ORDER BY ts")
+    } else {
+        format!("SELECT ts, SUM(rx_rate_avg) AS rx, SUM(tx_rate_avg) AS tx FROM {table} WHERE ts BETWEEN ?1 AND ?2 GROUP BY ts ORDER BY ts")
+    };
+
+    let rows = if table == "samples_raw" {
+        if let Some(id) = interface_id {
+            sqlx::query(&sql)
+                .bind(id)
+                .bind(start_ts)
+
+}}}
