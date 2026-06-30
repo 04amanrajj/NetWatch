@@ -89,5 +89,26 @@ pub struct GraphPoint {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct InterfaceDetail {
     pub name: String,
-
+    pub current_rx_rate: u64,
+    pub current_tx_rate: u64,
+    pub peak_rx_rate: u64,
+    pub peak_tx_rate: u64,
+    pub avg_rx_rate: u64,
+    pub avg_tx_rate: u64,
+    pub today_download: u64,
+    pub today_upload: u64,
+    pub yesterday_download: u64,
+    pub yesterday_upload: u64,
+    pub this_week_download: u64,
+    pub this_week_upload: u64,
+    pub last_week_download: u64,
+    pub last_week_upload: u64,
+    pub this_month_download: u64,
+    pub this_month_upload: u64,
+    pub last_month_download: u64,
+    pub last_month_upload: u64,
+    pub this_year_download: u64,
+    pub this_year_upload: u64,
+    pub total_download: u64,
+    pub total_upload: u64,
 }
