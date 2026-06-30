@@ -449,5 +449,94 @@ pub async fn graph_series(
             sqlx::query(&sql)
                 .bind(id)
                 .bind(start_ts)
+                .bind(end_ts)
+                .fetch_all(pool)
+                .await?
+        } else {
+            sqlx::query(&sql)
+                .bind(start_ts)
+                .bind(end_ts)
+                .fetch_all(pool)
+                .await?
+        }
+    } else if let Some(id) = interface_id {
+        sqlx::query(&sql)
+            .bind(id)
+            .bind(start_ts)
+            .bind(end_ts)
+            .fetch_all(pool)
+            .await?
+    } else {
+        sqlx::query(&sql)
+            .bind(start_ts)
+            .bind(end_ts)
+            .fetch_all(pool)
+            .await?
+    };
 
-}}}
+    Ok(rows
+        .into_iter()
+        .map(|r| GraphPoint {
+            ts: r.get("ts"),
+            rx_rate: r.get::<i64, _>("rx").max(0) as u64,
+            tx_rate: r.get::<i64, _>("tx").max(0) as u64,
+        })
+        .collect())
+}
+
+pub async fn daemon_status(pool: &SqlitePool) -> Result<DaemonStatus> {
+    let heartbeat = sqlx::query("SELECT value FROM daemon_meta WHERE key = 'heartbeat'")
+        .fetch_optional(pool)
+        .await?
+        .map(|r| r.get::<String, _>("value"));
+
+    let pid = sqlx::query("SELECT value FROM daemon_meta WHERE key = 'pid'")
+        .fetch_optional(pool)
+        .await?
+        .and_then(|r| r.get::<String, _>("value").parse().ok());
+
+    let interval = sqlx::query("SELECT value FROM daemon_meta WHERE key = 'sample_interval'")
+        .fetch_optional(pool)
+        .await?
+        .and_then(|r| r.get::<String, _>("value").parse().ok());
+
+    let last_heartbeat = heartbeat
+        .and_then(|s| s.parse::<i64>().ok())
+        .and_then(|ts| DateTime::from_timestamp(ts, 0));
+
+    let running = last_heartbeat
+        .map(|hb| (Utc::now() - hb).num_seconds() < 30)
+        .unwrap_or(false);
+
+    Ok(DaemonStatus {
+        running,
+        pid,
+        last_heartbeat,
+        sample_interval: interval,
+    })
+}
+
+pub async fn unacknowledged_alerts(pool: &SqlitePool) -> Result<Vec<AlertRow>> {
+    Ok(sqlx::query_as::<_, AlertRow>(
+        "SELECT id, ts, kind, message, acknowledged FROM alerts WHERE acknowledged = 0 ORDER BY ts DESC",
+    )
+    .fetch_all(pool)
+    .await?)
+}
+
+fn day_bounds(now: DateTime<Utc>) -> (DateTime<Utc>, DateTime<Utc>) {
+    use chrono::Datelike;
+    let start = Utc
+        .with_ymd_and_hms(now.year(), now.month(), now.day(), 0, 0, 0)
+        .single()
+        .unwrap();
+    (start, now)
+}
+
+fn format_date(ts: i64) -> String {
+    DateTime::from_timestamp(ts, 0)
+        .map(|dt| dt.format("%Y-%m-%d").to_string())
+        .unwrap_or_else(|| ts.to_string())
+}
+
+use chrono::Datelike;
