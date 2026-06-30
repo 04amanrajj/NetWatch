@@ -253,5 +253,55 @@ impl Database {
 
     pub async fn history_table(
         &self,
+        start_ts: i64,
+        end_ts: i64,
+    ) -> Result<Vec<HistoryEntry>> {
+        queries::history_table(&self.pool, start_ts, end_ts).await
+    }
 
+    pub async fn graph_series(
+        &self,
+        start_ts: i64,
+        end_ts: i64,
+        interface_id: Option<i64>,
+    ) -> Result<Vec<GraphPoint>> {
+        queries::graph_series(&self.pool, start_ts, end_ts, interface_id).await
+    }
+
+    pub async fn daemon_status(&self) -> Result<DaemonStatus> {
+        queries::daemon_status(&self.pool).await
+    }
+
+    pub async fn unacknowledged_alerts(&self) -> Result<Vec<AlertRow>> {
+        queries::unacknowledged_alerts(&self.pool).await
+    }
+
+    pub async fn mark_interface_removed(&self, name: &str, ts: i64) -> Result<()> {
+        if let Some(row) = sqlx::query_as::<_, InterfaceRow>(
+            "SELECT id, name, mac, first_seen, last_seen FROM interfaces WHERE name = ?1",
+        )
+        .bind(name)
+        .fetch_optional(&self.pool)
+        .await?
+        {
+            sqlx::query("UPDATE interfaces SET last_seen = ?1 WHERE id = ?2")
+                .bind(ts)
+                .bind(row.id)
+                .execute(&self.pool)
+                .await?;
+            self.insert_alert(
+                ts,
+                netwatch_core::AlertKind::InterfaceRemoved.as_str(),
+                &format!("Interface '{name}' disappeared"),
+            )
+            .await?;
+        }
+        Ok(())
+    }
+
+    pub async fn vacuum(&self) -> Result<()> {
+        info!("running database VACUUM");
+        sqlx::query("VACUUM").execute(&self.pool).await?;
+        Ok(())
+    }
 }
