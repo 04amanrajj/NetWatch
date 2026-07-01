@@ -4,3 +4,9 @@ After=network.target
 
 [Service]
 Type=simple
+ExecStart=%h/.cargo/bin/netwatchd
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=default.target
