@@ -1,0 +1,6 @@
+[Unit]
+Description=NetWatch Statistics Daemon (System-wide)
+After=network.target
+
+[Service]
+Type=simple
