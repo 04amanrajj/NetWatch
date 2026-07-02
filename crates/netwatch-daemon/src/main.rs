@@ -76,5 +76,31 @@ async fn run_daemon(config: Config, db: Database) -> Result<()> {
                     Ok(snapshots) => {
                         let current: HashSet<String> = snapshots.iter().map(|s| s.name.clone()).collect();
                         for removed in known_interfaces.difference(&current) {
+                            let _ = db.mark_interface_removed(removed, chrono::Utc::now().timestamp()).await;
+                        }
+                        known_interfaces = current;
 
-}}}}}}}
+                        let computed = compute_samples(&snapshots, &mut previous);
+                        for snap in &snapshots {
+                            pending_macs.push((snap.name.clone(), snap.mac.clone()));
+                        }
+                        for sample in &computed {
+                            if let Some(kind) = sample.anomaly {
+                                let _ = db.insert_alert(
+                                    sample.ts,
+                                    kind.as_str(),
+                                    &format!("Anomaly on {}: {:?}", sample.interface, kind),
+                                ).await;
+                            }
+                        }
+                        pending_samples.extend(computed);
+                    }
+                    Err(e) => warn!("collection failed: {e:#}"),
+                }
+                let elapsed = start.elapsed();
+                if elapsed > Duration::from_millis(100) {
+                    warn!("sample took {:?}", elapsed);
+                }
+            }
+
+}}}
