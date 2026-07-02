@@ -51,4 +51,30 @@ async fn main() -> Result<()> {
 
     info!(pid, "netwatchd starting");
 
+    run_daemon(config, db).await
 }
+
+async fn run_daemon(config: Config, db: Database) -> Result<()> {
+    let sample_interval = Duration::from_secs(config.sample_interval);
+    let batch_interval = Duration::from_secs(config.batch_write_interval);
+
+    let mut sample_tick = interval(sample_interval);
+    let mut batch_tick = interval(batch_interval);
+    let mut agg_tick = interval(Duration::from_secs(60));
+    let mut retention_tick = interval(Duration::from_secs(3600));
+
+    let mut previous: HashMap<String, netwatch_stats::PreviousSample> = HashMap::new();
+    let mut known_interfaces: HashSet<String> = HashSet::new();
+    let mut pending_samples: Vec<netwatch_stats::ComputedSample> = Vec::new();
+    let mut pending_macs: Vec<(String, Option<String>)> = Vec::new();
+
+    loop {
+        tokio::select! {
+            _ = sample_tick.tick() => {
+                let start = Instant::now();
+                match collect_interfaces(&config) {
+                    Ok(snapshots) => {
+                        let current: HashSet<String> = snapshots.iter().map(|s| s.name.clone()).collect();
+                        for removed in known_interfaces.difference(&current) {
+
+}}}}}}}
