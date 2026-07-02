@@ -4,3 +4,10 @@ After=network.target
 
 [Service]
 Type=simple
+User=YOUR_USERNAME_HERE
+ExecStart=/usr/local/bin/netwatchd
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
