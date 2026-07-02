@@ -102,5 +102,30 @@ async fn run_daemon(config: Config, db: Database) -> Result<()> {
                     warn!("sample took {:?}", elapsed);
                 }
             }
-
-}}}
+            _ = batch_tick.tick() => {
+                if !pending_samples.is_empty() {
+                    if let Err(e) = db.ingest_samples(&pending_samples, &pending_macs).await {
+                        error!("failed to ingest samples: {e:#}");
+                    } else {
+                        pending_samples.clear();
+                        pending_macs.clear();
+                    }
+                }
+                let ts = chrono::Utc::now().timestamp();
+                if let Err(e) = db.set_meta("heartbeat", &ts.to_string()).await {
+                    error!("failed to update heartbeat: {e:#}");
+                }
+            }
+            _ = agg_tick.tick() => {
+                if let Err(e) = db.run_aggregation().await {
+                    warn!("aggregation failed: {e:#}");
+                }
+            }
+            _ = retention_tick.tick() => {
+                if let Err(e) = db.run_retention().await {
+                    warn!("retention failed: {e:#}");
+                }
+            }
+        }
+    }
+}
