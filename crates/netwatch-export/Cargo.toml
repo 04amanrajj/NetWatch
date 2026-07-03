@@ -3,3 +3,8 @@ name = "netwatch-export"
 version.workspace = true
 edition.workspace = true
 license.workspace = true
+description = "Export formats for NetWatch statistics"
+
+[dependencies]
+anyhow.workspace = true
+chrono.workspace = true
