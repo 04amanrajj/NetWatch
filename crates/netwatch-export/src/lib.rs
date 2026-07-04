@@ -85,5 +85,25 @@ pub fn parse_range_flag(today: bool, month: bool, range: Option<&str>) -> Result
     if today {
         return Ok(TimeRange::Today);
     }
-
+    if month {
+        return Ok(TimeRange::CurrentMonth);
+    }
+    if let Some(r) = range {
+        let parts: Vec<&str> = r.split(':').collect();
+        if parts.len() != 2 {
+            anyhow::bail!("range must be YYYY-MM-DD:YYYY-MM-DD");
+        }
+        let start = chrono::NaiveDate::parse_from_str(parts[0], "%Y-%m-%d")?
+            .and_hms_opt(0, 0, 0)
+            .unwrap()
+            .and_utc()
+            .timestamp();
+        let end = chrono::NaiveDate::parse_from_str(parts[1], "%Y-%m-%d")?
+            .and_hms_opt(23, 59, 59)
+            .unwrap()
+            .and_utc()
+            .timestamp();
+        return Ok(TimeRange::Custom { start, end });
+    }
+    Ok(TimeRange::Last30Days)
 }
