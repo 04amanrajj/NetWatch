@@ -8,3 +8,9 @@ description = "Export formats for NetWatch statistics"
 [dependencies]
 anyhow.workspace = true
 chrono.workspace = true
+netwatch-core.workspace = true
+netwatch-db.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+thiserror.workspace = true
+netwatch-stats.workspace = true
