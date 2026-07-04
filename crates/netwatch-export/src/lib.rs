@@ -41,5 +41,27 @@ fn export_csv(history: &[netwatch_db::HistoryEntry], units: Units) -> Result<Str
             entry.download,
             entry.upload,
             entry.total,
+            entry.peak_download,
+            entry.peak_upload,
+        ));
+    }
+    let _ = units;
+    Ok(out)
+}
 
-}}
+fn export_json(history: &[netwatch_db::HistoryEntry]) -> Result<String> {
+    Ok(serde_json::to_string_pretty(history)?)
+}
+
+fn export_markdown(
+    history: &[netwatch_db::HistoryEntry],
+    units: Units,
+    range: &TimeRange,
+) -> Result<String> {
+    let mut out = String::new();
+    writeln!(out, "# NetWatch Export")?;
+    writeln!(out, "\nRange: `{range:?}`\n")?;
+    writeln!(
+        out,
+
+}
