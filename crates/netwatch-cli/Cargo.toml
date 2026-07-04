@@ -14,3 +14,11 @@ anyhow.workspace = true
 chrono.workspace = true
 clap.workspace = true
 netwatch-collector.workspace = true
+netwatch-core.workspace = true
+netwatch-db.workspace = true
+netwatch-export.workspace = true
+netwatch-stats.workspace = true
+netwatch-tui.workspace = true
+tokio = { workspace = true, features = ["rt-multi-thread", "macros"] }
+tracing.workspace = true
+tracing-subscriber.workspace = true
