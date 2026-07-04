@@ -63,5 +63,27 @@ fn export_markdown(
     writeln!(out, "\nRange: `{range:?}`\n")?;
     writeln!(
         out,
+        "| Date | Download | Upload | Total | Peak DL | Peak UL |"
+    )?;
+    writeln!(out, "|------|----------|--------|-------|---------|---------|")?;
+    for entry in history {
+        writeln!(
+            out,
+            "| {} | {} | {} | {} | {} | {} |",
+            entry.date,
+            format_bytes(entry.download, units),
+            format_bytes(entry.upload, units),
+            format_bytes(entry.total, units),
+            format_bytes(entry.peak_download, units),
+            format_bytes(entry.peak_upload, units),
+        )?;
+    }
+    Ok(out)
+}
+
+pub fn parse_range_flag(today: bool, month: bool, range: Option<&str>) -> Result<TimeRange> {
+    if today {
+        return Ok(TimeRange::Today);
+    }
 
 }
