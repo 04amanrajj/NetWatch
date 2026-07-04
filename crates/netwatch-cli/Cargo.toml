@@ -6,3 +6,11 @@ license.workspace = true
 description = "CLI and TUI launcher for NetWatch"
 
 [[bin]]
+name = "netwatch"
+path = "src/main.rs"
+
+[dependencies]
+anyhow.workspace = true
+chrono.workspace = true
+clap.workspace = true
+netwatch-collector.workspace = true
