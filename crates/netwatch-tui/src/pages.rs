@@ -68,5 +68,76 @@ fn draw_home(frame: &mut Frame, area: Rect, app: &App, theme: &Theme) {
     let chunks = Layout::default()
         .direction(Direction::Vertical)
         .margin(1)
+        .constraints([Constraint::Length(12), Constraint::Min(0)])
+        .split(area);
+
+    let text = format!(
+        "Today\n\
+         Download      {}\n\
+         Upload        {}\n\n\
+         Current Speed\n\
+         ↓ {}\n\
+         ↑ {}\n\n\
+         Interfaces Active  {}\n\
+         Database Size      {}\n\
+         Daemon             {}\n\
+         Sampling           {} sec",
+        format_bytes(app.totals.download, units),
+        format_bytes(app.totals.upload, units),
+        format_rate(app.speeds.rx_rate, units),
+        format_rate(app.speeds.tx_rate, units),
+        app.interfaces.len(),
+        format_bytes(app.db_size, units),
+        if app.daemon_status.running {
+            "Running"
+        } else {
+            "Stopped"
+        },
+        app.config.sample_interval,
+    );
+    frame.render_widget(
+        Paragraph::new(text).block(titled_block("Home", theme)),
+        chunks[0],
+    );
+
+    let rx: Vec<u64> = app.graph_points.iter().map(|p| p.rx_rate).collect();
+    draw_sparkline(frame, chunks[1], &rx, "Download (recent)", theme);
+}
+
+fn draw_interfaces(frame: &mut Frame, area: Rect, app: &App, theme: &Theme) {
+    let units = app.config.units;
+    let header = Row::new(vec!["Interface", "Download", "Upload", "Status"])
+        .style(theme.title_style())
+        .bottom_margin(1);
+
+    let rows: Vec<Row> = app
+        .filtered_interfaces
+        .iter()
+        .enumerate()
+        .map(|(vis_idx, &idx)| {
+            let iface = &app.interfaces[idx];
+            let style = if vis_idx == app.selection {
+                Style::default().add_modifier(Modifier::REVERSED)
+            } else if iface.operstate == "UP" {
+                Style::default().fg(theme.up)
+            } else {
+                Style::default().fg(theme.down)
+            };
+            Row::new(vec![
+                Cell::from(iface.name.clone()),
+                Cell::from(format_bytes(iface.download, units)),
+                Cell::from(format_bytes(iface.upload, units)),
+                Cell::from(iface.operstate.clone()),
+            ])
+            .style(style)
+        })
+        .collect();
+
+    let table = Table::new(
+        rows,
+        [
+            Constraint::Percentage(30),
+            Constraint::Percentage(25),
+            Constraint::Percentage(25),
 
 }
