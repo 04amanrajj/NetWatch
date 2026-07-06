@@ -19,3 +19,27 @@ use netwatch_db::Database;
 use ratatui::backend::CrosstermBackend;
 use ratatui::Terminal;
 
+pub struct RunOptions {
+    pub initial_page: Page,
+}
+
+impl Default for RunOptions {
+    fn default() -> Self {
+        Self {
+            initial_page: Page::Home,
+        }
+    }
+}
+
+pub async fn run(config: &Config, db: &Database, options: RunOptions) -> Result<()> {
+    enable_raw_mode()?;
+    io::stdout().execute(EnterAlternateScreen)?;
+    crossterm::execute!(io::stdout(), crossterm::event::DisableMouseCapture)?;
+
+    let backend = CrosstermBackend::new(io::stdout());
+    let mut terminal = Terminal::new(backend)?;
+    terminal.clear()?;
+
+    let theme = theme::Theme::default();
+
+}
