@@ -9,5 +9,16 @@ pub struct Theme {
     pub dim: Color,
     pub up: Color,
     pub down: Color,
-
+    pub alert: Color,
 }
+
+impl Default for Theme {
+    fn default() -> Self {
+        Self {
+            border: Color::Cyan,
+            title: Color::White,
+            accent: Color::Yellow,
+            text: Color::Gray,
+            dim: Color::DarkGray,
+
+}}}
