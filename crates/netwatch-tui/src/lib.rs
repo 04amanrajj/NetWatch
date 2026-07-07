@@ -41,5 +41,27 @@ pub async fn run(config: &Config, db: &Database, options: RunOptions) -> Result<
     terminal.clear()?;
 
     let theme = theme::Theme::default();
+    let mut app = App::new(config.clone(), options.initial_page);
 
-}
+    let tick_rate = Duration::from_secs(1);
+    let mut last_tick = std::time::Instant::now();
+
+    loop {
+        app.refresh(db).await?;
+
+        terminal.draw(|frame| {
+            pages::draw(frame, &app, &theme);
+        })?;
+
+        let timeout = tick_rate.saturating_sub(last_tick.elapsed());
+        if event::poll(timeout)? {
+            if let Event::Key(key) = event::read()? {
+                if key.kind == KeyEventKind::Press {
+                    match key.code {
+                        KeyCode::Char('q') | KeyCode::Esc if app.page != Page::Search => {
+                            app.should_quit = true;
+                        }
+                        KeyCode::Char('?') => app.show_help = !app.show_help,
+                        KeyCode::Char('i') => app.page = Page::Interfaces,
+
+}}}}}}
