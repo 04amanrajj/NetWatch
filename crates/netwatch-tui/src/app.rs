@@ -70,5 +70,41 @@ impl App {
             daemon_status: DaemonStatus {
                 running: false,
                 pid: None,
+                last_heartbeat: None,
+                sample_interval: None,
+            },
+            db_size: 0,
+            alert_count: 0,
+            filtered_interfaces: Vec::new(),
+        }
+    }
 
-}}}}
+    pub async fn refresh(&mut self, db: &netwatch_db::Database) -> anyhow::Result<()> {
+        self.totals = db.today_totals().await?;
+        self.speeds = db.current_speeds().await?;
+        self.interfaces = db.interface_stats_today().await?;
+        self.daemon_status = db.daemon_status().await?;
+        self.db_size = db.database_size_bytes().await?;
+        self.alert_count = db.unacknowledged_alerts().await?.len();
+        self.filtered_interfaces = (0..self.interfaces.len()).collect();
+
+        if let Some(id) = self.selected_interface_id {
+            self.interface_detail = Some(db.interface_detail(id).await?);
+        }
+
+        let range = self.current_history_range();
+        let now = chrono::Utc::now();
+        let (start, end) = range.bounds(now);
+        self.history = db.history_table(start.timestamp(), end.timestamp()).await?;
+
+        let graph_range = self.graph_range();
+        let (gstart, gend) = graph_range.bounds(now);
+        self.graph_points = db
+            .graph_series(
+                gstart.timestamp(),
+                gend.timestamp(),
+                self.selected_interface_id,
+            )
+            .await?;
+
+}}
