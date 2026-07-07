@@ -20,5 +20,16 @@ impl Default for Theme {
             accent: Color::Yellow,
             text: Color::Gray,
             dim: Color::DarkGray,
+            up: Color::Green,
+            down: Color::Red,
+            alert: Color::Red,
+        }
+    }
+}
 
-}}}
+impl Theme {
+    pub fn title_style(&self) -> Style {
+        Style::default()
+            .fg(self.title)
+
+}}
