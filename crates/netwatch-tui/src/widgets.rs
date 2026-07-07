@@ -35,5 +35,24 @@ pub fn draw_sparkline(
             inner,
         );
         return;
+    }
 
-}}
+    let max = *values.iter().max().unwrap_or(&1).max(&1);
+    let height = inner.height as usize;
+    let width = inner.width as usize;
+    if height < 2 || width < 2 {
+        return;
+    }
+
+    let mut lines: Vec<String> = Vec::new();
+    for row in 0..height {
+        let threshold = max - (max * row as u64 / height as u64);
+        let mut line = String::new();
+        for col in 0..width {
+            let idx = col * values.len() / width;
+            let val = values.get(idx).copied().unwrap_or(0);
+            if val >= threshold {
+                line.push('█');
+            } else {
+
+}}}}
