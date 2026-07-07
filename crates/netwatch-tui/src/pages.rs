@@ -139,5 +139,76 @@ fn draw_interfaces(frame: &mut Frame, area: Rect, app: &App, theme: &Theme) {
             Constraint::Percentage(30),
             Constraint::Percentage(25),
             Constraint::Percentage(25),
+            Constraint::Percentage(20),
+        ],
+    )
+    .header(header)
+    .block(titled_block("Interfaces", theme));
+
+    frame.render_widget(table, area);
+}
+
+fn draw_interface_detail(frame: &mut Frame, area: Rect, app: &App, theme: &Theme) {
+    let units = app.config.units;
+    let Some(detail) = &app.interface_detail else {
+        frame.render_widget(
+            Paragraph::new("No interface selected").block(titled_block("Interface Detail", theme)),
+            area,
+        );
+        return;
+    };
+
+    let lines = vec![
+        format!("Interface: {}", detail.name),
+        format!(
+            "Current Speed: ↓ {}  ↑ {}",
+            format_rate(detail.current_rx_rate, units),
+            format_rate(detail.current_tx_rate, units)
+        ),
+        format!(
+            "Peak Speed: ↓ {}  ↑ {}",
+            format_rate(detail.peak_rx_rate, units),
+            format_rate(detail.peak_tx_rate, units)
+        ),
+        format!(
+            "Average Speed: ↓ {}  ↑ {}",
+            format_rate(detail.avg_rx_rate, units),
+            format_rate(detail.avg_tx_rate, units)
+        ),
+        String::new(),
+        format!(
+            "Today: ↓ {}  ↑ {}",
+            format_bytes(detail.today_download, units),
+            format_bytes(detail.today_upload, units)
+        ),
+        format!(
+            "Yesterday: ↓ {}  ↑ {}",
+            format_bytes(detail.yesterday_download, units),
+            format_bytes(detail.yesterday_upload, units)
+        ),
+        format!(
+            "This Week: ↓ {}  ↑ {}",
+            format_bytes(detail.this_week_download, units),
+            format_bytes(detail.this_week_upload, units)
+        ),
+        format!(
+            "Last Week: ↓ {}  ↑ {}",
+            format_bytes(detail.last_week_download, units),
+            format_bytes(detail.last_week_upload, units)
+        ),
+        format!(
+            "This Month: ↓ {}  ↑ {}",
+            format_bytes(detail.this_month_download, units),
+            format_bytes(detail.this_month_upload, units)
+        ),
+        format!(
+            "Last Month: ↓ {}  ↑ {}",
+            format_bytes(detail.last_month_download, units),
+            format_bytes(detail.last_month_upload, units)
+        ),
+        format!(
+            "Year: ↓ {}  ↑ {}",
+            format_bytes(detail.this_year_download, units),
+            format_bytes(detail.this_year_upload, units)
 
 }
