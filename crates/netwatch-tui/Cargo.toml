@@ -8,3 +8,9 @@ description = "Terminal UI for NetWatch"
 [dependencies]
 anyhow.workspace = true
 chrono.workspace = true
+crossterm.workspace = true
+netwatch-core.workspace = true
+netwatch-db.workspace = true
+netwatch-stats.workspace = true
+tokio = { workspace = true, features = ["rt-multi-thread", "macros"] }
+ratatui = { workspace = true, features = ["all-widgets"] }
