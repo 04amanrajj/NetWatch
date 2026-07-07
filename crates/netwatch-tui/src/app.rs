@@ -34,5 +34,41 @@ pub struct App {
     pub graph_points: Vec<GraphPoint>,
     pub daemon_status: DaemonStatus,
     pub db_size: u64,
-
+    pub alert_count: usize,
+    pub filtered_interfaces: Vec<usize>,
 }
+
+impl App {
+    pub fn new(config: Config, initial_page: Page) -> Self {
+        Self {
+            config,
+            page: initial_page,
+            previous_page: Page::Home,
+            should_quit: false,
+            show_help: false,
+            selection: 0,
+            history_range_idx: 0,
+            graph_resolution_idx: 0,
+            search_query: String::new(),
+            totals: Totals {
+                download: 0,
+                upload: 0,
+                rx_rate: 0,
+                tx_rate: 0,
+            },
+            speeds: Totals {
+                download: 0,
+                upload: 0,
+                rx_rate: 0,
+                tx_rate: 0,
+            },
+            interfaces: Vec::new(),
+            interface_detail: None,
+            selected_interface_id: None,
+            history: Vec::new(),
+            graph_points: Vec::new(),
+            daemon_status: DaemonStatus {
+                running: false,
+                pid: None,
+
+}}}}
