@@ -54,5 +54,22 @@ pub fn draw_sparkline(
             if val >= threshold {
                 line.push('█');
             } else {
+                line.push(' ');
+            }
+        }
+        lines.push(line);
+    }
 
-}}}}
+    let label = format!("{} (max {})", title, format_bytes(max));
+    let mut output = label;
+    output.push('\n');
+    for line in lines {
+        output.push_str(&line);
+        output.push('\n');
+    }
+    frame.render_widget(Paragraph::new(output), inner);
+}
+
+fn format_bytes(bytes: u64) -> String {
+    netwatch_stats::format_bytes(bytes, netwatch_core::Units::Auto)
+}
