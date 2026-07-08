@@ -31,5 +31,14 @@ impl Theme {
     pub fn title_style(&self) -> Style {
         Style::default()
             .fg(self.title)
+            .add_modifier(Modifier::BOLD)
+    }
 
-}}
+    pub fn border_style(&self) -> Style {
+        Style::default().fg(self.border)
+    }
+
+    pub fn accent_style(&self) -> Style {
+        Style::default().fg(self.accent)
+    }
+}
