@@ -210,5 +210,75 @@ fn draw_interface_detail(frame: &mut Frame, area: Rect, app: &App, theme: &Theme
             "Year: ↓ {}  ↑ {}",
             format_bytes(detail.this_year_download, units),
             format_bytes(detail.this_year_upload, units)
+        ),
+        format!(
+            "Total Since Installed: ↓ {}  ↑ {}",
+            format_bytes(detail.total_download, units),
+            format_bytes(detail.total_upload, units)
+        ),
+    ];
+
+    frame.render_widget(
+        Paragraph::new(lines.join("\n")).block(titled_block("Interface Detail", theme)),
+        area,
+    );
+}
+
+fn draw_history(frame: &mut Frame, area: Rect, app: &App, theme: &Theme) {
+    let units = app.config.units;
+    let title = format!("History — {}", app.history_range_label());
+    let header = Row::new(vec![
+        "Date",
+        "Download",
+        "Upload",
+        "Total",
+        "Peak DL",
+        "Peak UL",
+    ])
+    .style(theme.title_style())
+    .bottom_margin(1);
+
+    let rows: Vec<Row> = app
+        .history
+        .iter()
+        .enumerate()
+        .map(|(idx, entry)| {
+            let style = if idx == app.selection {
+                Style::default().add_modifier(Modifier::REVERSED)
+            } else {
+                Style::default().fg(theme.text)
+            };
+            Row::new(vec![
+                Cell::from(entry.date.clone()),
+                Cell::from(format_bytes(entry.download, units)),
+                Cell::from(format_bytes(entry.upload, units)),
+                Cell::from(format_bytes(entry.total, units)),
+                Cell::from(format_bytes(entry.peak_download, units)),
+                Cell::from(format_bytes(entry.peak_upload, units)),
+            ])
+            .style(style)
+        })
+        .collect();
+
+    let table = Table::new(
+        rows,
+        [
+            Constraint::Percentage(20),
+            Constraint::Percentage(16),
+            Constraint::Percentage(16),
+            Constraint::Percentage(16),
+            Constraint::Percentage(16),
+            Constraint::Percentage(16),
+        ],
+    )
+    .header(header)
+    .block(titled_block(&title, theme));
+
+    frame.render_widget(table, area);
+}
+
+fn draw_graph(frame: &mut Frame, area: Rect, app: &App, theme: &Theme) {
+    let title = format!("Graph — {}", app.graph_resolution_label());
+    let chunks = Layout::default()
 
 }
