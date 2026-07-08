@@ -63,5 +63,27 @@ pub async fn run(config: &Config, db: &Database, options: RunOptions) -> Result<
                         }
                         KeyCode::Char('?') => app.show_help = !app.show_help,
                         KeyCode::Char('i') => app.page = Page::Interfaces,
+                        KeyCode::Char('h') => app.page = Page::History,
+                        KeyCode::Char('g') => app.page = Page::Graph,
+                        KeyCode::Char('l') => app.page = Page::Live,
+                        KeyCode::Char('/') => {
+                            app.page = Page::Search;
+                            app.search_query.clear();
+                        }
+                        KeyCode::Char('1') => app.page = Page::Home,
+                        KeyCode::Enter => app.handle_enter(),
+                        KeyCode::Up => app.move_selection(-1),
+                        KeyCode::Down => app.move_selection(1),
+                        KeyCode::Left => app.adjust_range(-1),
+                        KeyCode::Right => app.adjust_range(1),
+                        KeyCode::Char(c) if app.page == Page::Search => {
+                            app.search_query.push(c);
+                            app.apply_search();
+                        }
+                        KeyCode::Backspace if app.page == Page::Search => {
+                            app.search_query.pop();
+                            app.apply_search();
+                        }
+                        KeyCode::Tab => app.next_history_range(),
 
 }}}}}}
