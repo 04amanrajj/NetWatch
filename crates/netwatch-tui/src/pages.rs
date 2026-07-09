@@ -280,5 +280,76 @@ fn draw_history(frame: &mut Frame, area: Rect, app: &App, theme: &Theme) {
 fn draw_graph(frame: &mut Frame, area: Rect, app: &App, theme: &Theme) {
     let title = format!("Graph — {}", app.graph_resolution_label());
     let chunks = Layout::default()
+        .direction(Direction::Vertical)
+        .constraints([Constraint::Percentage(50), Constraint::Percentage(50)])
+        .margin(1)
+        .split(area);
+
+    let block = titled_block(&title, theme);
+    frame.render_widget(block, area);
+
+    let inner = Layout::default()
+        .direction(Direction::Vertical)
+        .constraints([Constraint::Percentage(50), Constraint::Percentage(50)])
+        .split(Rect {
+            x: area.x + 1,
+            y: area.y + 1,
+            width: area.width.saturating_sub(2),
+            height: area.height.saturating_sub(2),
+        });
+
+    let rx: Vec<u64> = app.graph_points.iter().map(|p| p.rx_rate).collect();
+    let tx: Vec<u64> = app.graph_points.iter().map(|p| p.tx_rate).collect();
+    draw_sparkline(frame, inner[0], &rx, "Download", theme);
+    draw_sparkline(frame, inner[1], &tx, "Upload", theme);
+
+    let _ = chunks;
+}
+
+fn draw_live(frame: &mut Frame, area: Rect, app: &App, theme: &Theme) {
+    let units = app.config.units;
+    let header = Row::new(vec![
+        "Interface",
+        "Download",
+        "Upload",
+        "Peak",
+        "Average",
+        "Status",
+    ])
+    .style(theme.title_style())
+    .bottom_margin(1);
+
+    let rows: Vec<Row> = app
+        .interfaces
+        .iter()
+        .map(|iface| {
+            let peak = format_rate(
+                iface.rx_rate.max(iface.tx_rate),
+                units,
+            );
+            let avg = format_rate(
+                (iface.rx_rate + iface.tx_rate) / 2,
+                units,
+            );
+            Row::new(vec![
+                Cell::from(iface.name.clone()),
+                Cell::from(format_rate(iface.rx_rate, units)),
+                Cell::from(format_rate(iface.tx_rate, units)),
+                Cell::from(peak),
+                Cell::from(avg),
+                Cell::from(iface.operstate.clone()),
+            ])
+        })
+        .collect();
+
+    let table = Table::new(
+        rows,
+        [
+            Constraint::Percentage(22),
+            Constraint::Percentage(16),
+            Constraint::Percentage(16),
+            Constraint::Percentage(16),
+            Constraint::Percentage(16),
+            Constraint::Percentage(14),
 
 }
