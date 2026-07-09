@@ -142,5 +142,41 @@ impl App {
     pub fn adjust_range(&mut self, delta: i32) {
         match self.page {
             Page::History => {
+                let next = self.history_range_idx as i32 + delta;
+                self.history_range_idx = next.clamp(0, 6) as usize;
+            }
+            Page::Graph => {
+                let next = self.graph_resolution_idx as i32 + delta;
+                self.graph_resolution_idx = next.clamp(0, 3) as usize;
+            }
+            _ => {}
+        }
+    }
 
-}}}}
+    pub fn next_history_range(&mut self) {
+        self.history_range_idx = (self.history_range_idx + 1) % 7;
+    }
+
+    pub fn current_history_range(&self) -> TimeRange {
+        match self.history_range_idx {
+            0 => TimeRange::Today,
+            1 => TimeRange::Yesterday,
+            2 => TimeRange::Last7Days,
+            3 => TimeRange::Last30Days,
+            4 => TimeRange::CurrentMonth,
+            5 => TimeRange::PreviousMonth,
+            _ => TimeRange::ThisYear,
+        }
+    }
+
+    pub fn graph_range(&self) -> TimeRange {
+        match self.graph_resolution_idx {
+            0 => TimeRange::Today,
+            1 => TimeRange::Last7Days,
+            2 => TimeRange::Last30Days,
+            _ => TimeRange::ThisYear,
+        }
+    }
+
+
+}
