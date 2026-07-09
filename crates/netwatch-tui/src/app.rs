@@ -107,4 +107,40 @@ impl App {
             )
             .await?;
 
-}}
+        Ok(())
+    }
+
+    pub fn handle_enter(&mut self) {
+        match self.page {
+            Page::Interfaces => {
+                if let Some(idx) = self.filtered_interfaces.get(self.selection) {
+                    if let Some(iface) = self.interfaces.get(*idx) {
+                        self.selected_interface_id = Some(iface.id);
+                        self.previous_page = Page::Interfaces;
+                        self.page = Page::InterfaceDetail;
+                    }
+                }
+            }
+            Page::History => {}
+            _ => {}
+        }
+    }
+
+    pub fn move_selection(&mut self, delta: i32) {
+        let len = match self.page {
+            Page::Interfaces => self.filtered_interfaces.len(),
+            Page::History => self.history.len(),
+            _ => 0,
+        };
+        if len == 0 {
+            return;
+        }
+        let next = self.selection as i32 + delta;
+        self.selection = next.clamp(0, len as i32 - 1) as usize;
+    }
+
+    pub fn adjust_range(&mut self, delta: i32) {
+        match self.page {
+            Page::History => {
+
+}}}}
