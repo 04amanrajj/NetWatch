@@ -85,5 +85,25 @@ pub async fn run(config: &Config, db: &Database, options: RunOptions) -> Result<
                             app.apply_search();
                         }
                         KeyCode::Tab => app.next_history_range(),
+                        _ => {}
+                    }
+                    if key.modifiers.contains(KeyModifiers::CONTROL) && key.code == KeyCode::Char('c') {
+                        app.should_quit = true;
+                    }
+                }
+            }
+        }
 
-}}}}}}
+        if last_tick.elapsed() >= tick_rate {
+            last_tick = std::time::Instant::now();
+        }
+
+        if app.should_quit {
+            break;
+        }
+    }
+
+    disable_raw_mode()?;
+    io::stdout().execute(LeaveAlternateScreen)?;
+    Ok(())
+}
