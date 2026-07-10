@@ -178,5 +178,40 @@ impl App {
         }
     }
 
+    pub fn history_range_label(&self) -> &'static str {
+        match self.history_range_idx {
+            0 => "Today",
+            1 => "Yesterday",
+            2 => "Last 7 Days",
+            3 => "Last 30 Days",
+            4 => "Current Month",
+            5 => "Previous Month",
+            _ => "This Year",
+        }
+    }
 
+    pub fn graph_resolution_label(&self) -> &'static str {
+        match self.graph_resolution_idx {
+            0 => "Hour",
+            1 => "Day",
+            2 => "Week",
+            _ => "Month",
+        }
+    }
+
+    pub fn apply_search(&mut self) {
+        let q = self.search_query.to_lowercase();
+        if q.is_empty() {
+            self.filtered_interfaces = (0..self.interfaces.len()).collect();
+            return;
+        }
+        self.filtered_interfaces = self
+            .interfaces
+            .iter()
+            .enumerate()
+            .filter(|(_, iface)| iface.name.to_lowercase().contains(&q))
+            .map(|(i, _)| i)
+            .collect();
+        self.selection = 0;
+    }
 }
