@@ -351,5 +351,74 @@ fn draw_live(frame: &mut Frame, area: Rect, app: &App, theme: &Theme) {
             Constraint::Percentage(16),
             Constraint::Percentage(16),
             Constraint::Percentage(14),
+        ],
+    )
+    .header(header)
+    .block(titled_block("Live Monitor", theme));
 
+    frame.render_widget(table, area);
+}
+
+fn draw_search(frame: &mut Frame, area: Rect, app: &App, theme: &Theme) {
+    let prompt = format!("Search: {}_", app.search_query);
+    frame.render_widget(
+        Paragraph::new(prompt).block(titled_block("Search", theme)),
+        Rect {
+            x: area.x,
+            y: area.y,
+            width: area.width,
+            height: 3,
+        },
+    );
+    draw_interfaces(
+        frame,
+        Rect {
+            x: area.x,
+            y: area.y + 3,
+            width: area.width,
+            height: area.height.saturating_sub(3),
+        },
+        app,
+        theme,
+    );
+}
+
+fn draw_help(frame: &mut Frame, _app: &App, theme: &Theme) {
+    let area = centered_rect(60, 40, frame.area());
+    let text = "\
+NetWatch — keyboard shortcuts\n\n\
+q/Esc   Quit or go back\n\
+i       Interfaces\n\
+h       History\n\
+g       Graph\n\
+l       Live monitor\n\
+/       Search\n\
+Enter   Open interface detail\n\
+↑/↓     Navigate lists\n\
+←/→     Change range/resolution\n\
+?       Toggle this help\n";
+    frame.render_widget(
+        Paragraph::new(text).block(titled_block("Help", theme)),
+        area,
+    );
+}
+
+fn centered_rect(percent_x: u16, percent_y: u16, r: Rect) -> Rect {
+    let popup_layout = Layout::default()
+        .direction(Direction::Vertical)
+        .constraints([
+            Constraint::Percentage((100 - percent_y) / 2),
+            Constraint::Percentage(percent_y),
+            Constraint::Percentage((100 - percent_y) / 2),
+        ])
+        .split(r);
+
+    Layout::default()
+        .direction(Direction::Horizontal)
+        .constraints([
+            Constraint::Percentage((100 - percent_x) / 2),
+            Constraint::Percentage(percent_x),
+            Constraint::Percentage((100 - percent_x) / 2),
+        ])
+        .split(popup_layout[1])[1]
 }
