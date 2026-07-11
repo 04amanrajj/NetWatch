@@ -43,5 +43,51 @@ enum Commands {
         today: bool,
         #[arg(long)]
         month: bool,
+        #[arg(long)]
+        range: Option<String>,
+        #[arg(short, long, value_enum, default_value_t = ExportFormatArg::Csv)]
+        format: ExportFormatArg,
+    },
+    /// Diagnose installation and daemon health
+    Doctor,
+}
+
+#[derive(Debug, Subcommand)]
+enum DaemonAction {
+    Status,
+    Start,
+    Stop,
+}
+
+#[derive(Debug, Clone, Copy, ValueEnum)]
+enum ExportFormatArg {
+    Csv,
+    Json,
+    Markdown,
+}
+
+impl From<ExportFormatArg> for ExportFormat {
+    fn from(v: ExportFormatArg) -> Self {
+        match v {
+            ExportFormatArg::Csv => ExportFormat::Csv,
+            ExportFormatArg::Json => ExportFormat::Json,
+            ExportFormatArg::Markdown => ExportFormat::Markdown,
+        }
+    }
+}
+
+#[tokio::main]
+async fn main() -> Result<()> {
+    tracing_subscriber::fmt()
+        .with_env_filter(EnvFilter::from_default_env())
+        .init();
+
+    let cli = Cli::parse();
+    let config = Config::load(cli.config.as_deref())?;
+    let db_path = config.database_path();
+
+    match cli.command {
+        None => run_tui(&config, &db_path, Page::Home).await?,
+        Some(Commands::Live) => run_tui(&config, &db_path, Page::Live).await?,
 
 }}
