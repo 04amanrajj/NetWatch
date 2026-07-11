@@ -1,0 +1,11 @@
+.TH NETWATCHD 1 "2026-07-14" "0.1.0" "NetWatch Daemon Manual"
+.SH NAME
+netwatchd \- Background daemon for network usage statistics monitoring
+.SH SYNOPSIS
+.B netwatchd
+[\fIOPTIONS\fR]
+.SH DESCRIPTION
+.B netwatchd
+runs in the background to periodically collect network interface statistics
+from sysfs (/sys/class/net) or /proc/net/dev. Collected samples are stored,
+aggregated into minute/hourly/daily tiers, and cleaned up according to the
