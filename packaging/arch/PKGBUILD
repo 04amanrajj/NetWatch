@@ -1,0 +1,11 @@
+# Maintainer: NetWatch Contributors <https://github.com/04amanrajj/NetWatch>
+pkgname=netwatch
+pkgver=0.1.0
+pkgrel=1
+pkgdesc="Lightweight Linux network usage monitor with TUI and daemon"
+arch=('x86_64' 'aarch64')
+url="https://github.com/04amanrajj/NetWatch"
+license=('MIT')
+depends=('sqlite')
+makedepends=('cargo')
+source=("$pkgname-$pkgver.tar.gz::https://github.com/04amanrajj/NetWatch/archive/v$pkgver.tar.gz")
