@@ -89,5 +89,49 @@ async fn main() -> Result<()> {
     match cli.command {
         None => run_tui(&config, &db_path, Page::Home).await?,
         Some(Commands::Live) => run_tui(&config, &db_path, Page::Live).await?,
+        Some(Commands::History) => run_tui(&config, &db_path, Page::History).await?,
+        Some(Commands::Today) => print_summary(&config, &db_path, TimeRange::Today).await?,
+        Some(Commands::Yesterday) => {
+            print_summary(&config, &db_path, TimeRange::Yesterday).await?
+        }
+        Some(Commands::Interfaces) => print_interfaces(&config, &db_path).await?,
+        Some(Commands::Daemon { action }) => daemon_action(action)?,
+        Some(Commands::Export {
+            today,
+            month,
+            range,
+            format,
+        }) => {
+            export_data(&config, &db_path, today, month, range.as_deref(), format.into()).await?
+        }
+        Some(Commands::Doctor) => doctor(&config, &db_path).await?,
+    }
 
-}}
+    Ok(())
+}
+
+async fn open_db(path: &std::path::Path) -> Result<Database> {
+    if path.exists() {
+        match Database::open_readonly(path).await {
+            Ok(db) => Ok(db),
+            Err(_) => Database::open(path, false)
+                .await
+                .context("open database"),
+        }
+    } else {
+        Database::open(path, true)
+            .await
+            .context("create database")
+    }
+}
+
+async fn run_tui(config: &Config, db_path: &std::path::Path, page: Page) -> Result<()> {
+    let db = open_db(db_path).await?;
+    netwatch_tui::run(
+        config,
+        &db,
+        RunOptions { initial_page: page },
+    )
+    .await
+}
+
