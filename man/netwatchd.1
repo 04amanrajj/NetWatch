@@ -9,3 +9,15 @@ netwatchd \- Background daemon for network usage statistics monitoring
 runs in the background to periodically collect network interface statistics
 from sysfs (/sys/class/net) or /proc/net/dev. Collected samples are stored,
 aggregated into minute/hourly/daily tiers, and cleaned up according to the
+configured retention policy.
+.SH OPTIONS
+.TP
+.B \-c, \-\-config \fIPATH\fR
+Specify a custom configuration file path.
+.TP
+.B \-h, \-\-help
+Print help information and exit.
+.TP
+.B \-V, \-\-version
+Print version information and exit.
+.SH SIGNALS
