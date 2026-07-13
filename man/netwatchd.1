@@ -21,3 +21,15 @@ Print help information and exit.
 .B \-V, \-\-version
 Print version information and exit.
 .SH SIGNALS
+.TP
+.B SIGTERM, SIGINT
+Graceful shutdown. Closes database and terminates sampling loop.
+.SH FILES
+.TP
+.I ~/.config/netwatch/config.toml
+The configuration file.
+.TP
+.I ~/.local/share/netwatch/netwatch.db
+The SQLite WAL database storing historical network samples.
+.SH AUTHOR
+04amanrajj <04.aman.raj@gmail.com>
