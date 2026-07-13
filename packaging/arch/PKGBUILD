@@ -20,3 +20,15 @@ prepare() {
 build() {
   cd "NetWatch-$pkgver"
   export CARGO_HOME="$srcdir/cargo-home"
+  cargo build --release --frozen
+}
+
+package() {
+  cd "NetWatch-$pkgver"
+  install -Dm755 target/release/netwatch "$pkgdir/usr/bin/netwatch"
+  install -Dm755 target/release/netwatchd "$pkgdir/usr/bin/netwatchd"
+  install -Dm644 assets/systemd/netwatchd-system.service "$pkgdir/usr/lib/systemd/system/netwatchd.service"
+  install -Dm644 LICENSE "$pkgdir/usr/share/licenses/$pkgname/LICENSE"
+  install -Dm644 man/netwatch.1 "$pkgdir/usr/share/man/man1/netwatch.1"
+  install -Dm644 man/netwatchd.1 "$pkgdir/usr/share/man/man1/netwatchd.1"
+}
