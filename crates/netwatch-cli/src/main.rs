@@ -135,3 +135,50 @@ async fn run_tui(config: &Config, db_path: &std::path::Path, page: Page) -> Resu
     .await
 }
 
+async fn print_summary(config: &Config, db_path: &std::path::Path, range: TimeRange) -> Result<()> {
+    let db = open_db(db_path).await?;
+    let now = chrono::Utc::now();
+    let (start, end) = range.bounds(now);
+    let totals = db
+        .history_table(start.timestamp(), end.timestamp())
+        .await?
+        .into_iter()
+        .fold((0u64, 0u64), |(dl, ul), e| (dl + e.download, ul + e.upload));
+
+    let units = config.units;
+    println!("Download: {}", format_bytes(totals.0, units));
+    println!("Upload:   {}", format_bytes(totals.1, units));
+    Ok(())
+}
+
+async fn print_interfaces(config: &Config, db_path: &std::path::Path) -> Result<()> {
+    let db = open_db(db_path).await?;
+    let stats = db.interface_stats_today().await?;
+    let units = config.units;
+    println!("{:<16} {:>12} {:>12} {:>8}", "Interface", "Download", "Upload", "Status");
+    for iface in stats {
+        println!(
+            "{:<16} {:>12} {:>12} {:>8}",
+            iface.name,
+            format_bytes(iface.download, units),
+            format_bytes(iface.upload, units),
+            iface.operstate,
+        );
+    }
+    Ok(())
+}
+
+fn daemon_action(action: DaemonAction) -> Result<()> {
+    let systemctl = |args: &[&str]| {
+        let status = Command::new("systemctl")
+            .args(["--user"])
+            .args(args)
+            .status()
+            .context("run systemctl")?;
+        if !status.success() {
+            anyhow::bail!("systemctl {} failed", args.join(" "));
+        }
+        Ok(())
+    };
+
+}
