@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<component type="console-application">
+  <id>netwatch</id>
+  <metadata_license>MIT</metadata_license>
+  <project_license>MIT</project_license>
+  <name>NetWatch</name>
+  <summary>Lightweight, SQLite-backed network traffic monitor</summary>
+  <description>
+    <p>
+      NetWatch is a lightweight, SQLite-backed network traffic monitor for Linux systems.
+      It runs as a low-overhead background daemon that periodically polls network interfaces
+      and persists stats to SQLite.
+    </p>
+    <p>
+      Users can inspect real-time usage and historical aggregated statistics (minute, hourly, 
+      daily) using the fast, interactive terminal user interface (TUI) or the companion CLI.
+    </p>
+  </description>
+  <url type="homepage">https://github.com/04amanrajj/NetWatch</url>
+  <provides>
+    <binary>netwatch</binary>
+    <binary>netwatchd</binary>
+  </provides>
+</component>

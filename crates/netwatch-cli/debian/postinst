@@ -1,0 +1,19 @@
+#!/bin/sh
+set -e
+
+# Create the netwatch user/group if they don't exist
+if ! id "netwatch" >/dev/null 2>&1; then
+    useradd --system --no-create-home --shell /usr/sbin/nologin netwatch
+fi
+
+# Ensure the database directory exists and has the correct permissions
+mkdir -p /var/lib/netwatch
+chown -R netwatch:netwatch /var/lib/netwatch
+chmod 755 /var/lib/netwatch
+
+# Reload systemd configuration and start/restart the service
+if [ -d /run/systemd/system ]; then
+    systemctl daemon-reload || true
+    systemctl enable netwatchd.service || true
+    systemctl restart netwatchd.service || true
+fi

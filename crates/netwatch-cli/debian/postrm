@@ -1,0 +1,15 @@
+#!/bin/sh
+set -e
+
+# If the package is purged, remove the user and database/config directories
+if [ "$1" = "purge" ]; then
+    rm -rf /var/lib/netwatch
+    rm -rf /etc/netwatch
+    if id "netwatch" >/dev/null 2>&1; then
+        userdel netwatch || true
+    fi
+fi
+
+if [ -d /run/systemd/system ]; then
+    systemctl daemon-reload || true
+fi

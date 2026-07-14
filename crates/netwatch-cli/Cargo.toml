@@ -22,3 +22,28 @@ netwatch-tui.workspace = true
 tokio = { workspace = true, features = ["rt-multi-thread", "macros"] }
 tracing.workspace = true
 tracing-subscriber.workspace = true
+
+[package.metadata.deb]
+name = "netwatch"
+maintainer = "NetWatch Contributors <https://github.com/04amanrajj/NetWatch>"
+copyright = "2026 NetWatch Contributors"
+license-file = ["../../LICENSE", "0"]
+maintainer-scripts = "debian"
+section = "net"
+priority = "optional"
+extended-description = """
+A lightweight, SQLite-backed network traffic monitor for Linux systems.
+It features a stunning Terminal User Interface (TUI) and a command line
+interface (CLI) driven by a background daemon that aggregates hourly,
+daily, and monthly statistics.
+"""
+assets = [
+    ["../../target/release/netwatch", "usr/bin/netwatch", "755"],
+    ["../../target/release/netwatchd", "usr/bin/netwatchd", "755"],
+    ["../../assets/systemd/netwatchd-system.service", "lib/systemd/system/netwatchd.service", "644"],
+    ["../../man/netwatch.1", "usr/share/man/man1/netwatch.1", "644"],
+    ["../../man/netwatchd.1", "usr/share/man/man1/netwatchd.1", "644"],
+    ["../../assets/config.toml", "etc/netwatch/config.toml", "644"],
+    ["../../assets/netwatch.desktop", "usr/share/applications/netwatch.desktop", "644"],
+    ["../../assets/netwatch.metainfo.xml", "usr/share/metainfo/netwatch.metainfo.xml", "644"],
+]

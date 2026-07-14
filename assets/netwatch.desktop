@@ -1,0 +1,9 @@
+[Desktop Entry]
+Type=Application
+Name=NetWatch
+Comment=Lightweight SQLite-backed network traffic monitor
+Exec=netwatch
+Icon=utilities-system-monitor
+Terminal=true
+Categories=System;Monitor;Network;
+Keywords=network;traffic;monitor;bandwidth;tui;cli;

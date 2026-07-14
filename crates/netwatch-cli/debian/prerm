@@ -1,0 +1,8 @@
+#!/bin/sh
+set -e
+
+# Stop the service before removing/upgrading
+if [ -d /run/systemd/system ]; then
+    systemctl stop netwatchd.service || true
+    systemctl disable netwatchd.service || true
+fi
