@@ -226,5 +226,49 @@ async fn doctor(config: &Config, db_path: &std::path::Path) -> Result<()> {
 
     let config_path = cli_config_path(config);
     println!(
+        "[{}] Config: {}",
+        if config_path.exists() { "ok" } else { "warn" },
+        config_path.display()
+    );
+    println!(
+        "[{}] Database path: {}",
+        if db_path.exists() { "ok" } else { "missing" },
+        db_path.display()
+    );
 
+    if db_path.exists() {
+        let db = open_db(db_path).await?;
+        let integrity = db.integrity_check().await?;
+        println!(
+            "[{}] Database integrity",
+            if integrity { "ok" } else { "FAIL" }
+        );
+        let status = db.daemon_status().await?;
+        println!(
+            "[{}] Daemon heartbeat (running={})",
+            if status.running { "ok" } else { "stopped" },
+            status.running
+        );
+        if let Some(ts) = status.last_heartbeat {
+            println!("    Last heartbeat: {ts}");
+        }
+        let alerts = db.unacknowledged_alerts().await?;
+        if !alerts.is_empty() {
+            println!("[warn] {} unacknowledged alert(s)", alerts.len());
+            for alert in alerts.iter().take(5) {
+                println!("    - [{}] {}", alert.kind, alert.message);
+            }
+        }
+    }
+
+    match netwatch_collector::collect_interfaces(config) {
+        Ok(ifaces) => println!("[ok] Collector: {} interface(s) detected", ifaces.len()),
+        Err(e) => println!("[FAIL] Collector: {e}"),
+    }
+
+    Ok(())
+}
+
+fn cli_config_path(_config: &Config) -> PathBuf {
+    netwatch_core::default_config_path()
 }
