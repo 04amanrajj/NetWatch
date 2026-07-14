@@ -1,6 +1,6 @@
 # NetWatch
 
-A lightweight, SQLite-backed network traffic monitor for Linux systems with a Terminal User Interface (TUI) and Command Line Interface (CLI).
+A lightweight, SQLite-backed network traffic monitor for Linux systems with a stunning Terminal User Interface (TUI) and Command Line Interface (CLI).
 
 ## Features
 
@@ -10,76 +10,116 @@ A lightweight, SQLite-backed network traffic monitor for Linux systems with a Te
 - **Diagnostics**: `netwatch doctor` validates system config, database integrity, and interface collection.
 - **Packaging**: Ready-to-go `systemd` units, man pages, Arch `PKGBUILD`, and Debian/RedHat configuration templates.
 
-## Installation & Setup
+## Quick Start & Testing (e.g., in Docker Ubuntu)
+
+If you are testing NetWatch in a fresh environment, such as a Docker Ubuntu container, follow these steps:
 
 ### 1. Install System Dependencies
-Ensure you have the required compiler and SQLite development libraries installed:
+Install the required build tools and SQLite development libraries.
 
-**On Ubuntu / Debian**:
-```bash
-sudo apt-get update
-sudo apt-get install -y build-essential pkg-config sqlite3 libsqlite3-dev curl
-```
+* **Ubuntu / Debian**:
+  ```bash
+  sudo apt-get update && sudo apt-get install -y \
+    curl \
+    build-essential \
+    pkg-config \
+    sqlite3 \
+    libsqlite3-dev
+  ```
+* **Arch Linux**:
+  ```bash
+  sudo pacman -Syu --needed base-devel sqlite
+  ```
 
-### 2. Install Rust and Cargo
-If you don't have Rust installed, install it using `rustup`:
+### 2. Install Rust & Cargo
+If you don't have Rust/Cargo installed:
 ```bash
 curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
 source "$HOME/.cargo/env"
 ```
 
-### 3. Build the Project
-Compile the binaries in release mode:
+### 3. Clone and Build the Project
 ```bash
+git clone https://github.com/04amanrajj/NetWatch.git
+cd NetWatch
 cargo build --release
 ```
-This builds two binaries:
-- `target/release/netwatchd`: The background statistics daemon.
-- `target/release/netwatch`: The terminal user interface (TUI) client.
 
-### 4. Enable Background Daemon (System-wide Service)
-Configure `netwatchd` to run automatically at boot as a system-wide `systemd` service under a dedicated `netwatch` system user:
-
+### 4. Test End-to-End
+To verify that the daemon and TUI are working correctly:
 ```bash
-# Create the netwatch system user and group with home directory /var/lib/netwatch
-sudo useradd -r -s /usr/sbin/nologin -d /var/lib/netwatch -m netwatch
+# Run the daemon in the background
+./target/release/netwatchd &
 
-# Install the compiled daemon binary
-sudo cp target/release/netwatchd /usr/local/bin/
+# Generate some network traffic to collect
+apt-get update # or curl a few webpages
 
-# Copy the service configuration
-sudo cp assets/systemd/netwatchd-system.service /etc/systemd/system/netwatchd.service
-
-# Reload systemd and start/enable the service
-sudo systemctl daemon-reload
-sudo systemctl enable --now netwatchd
-```
-
-### 5. Launch the Client (TUI)
-Once the service is active, it writes metrics to `/var/lib/netwatch/.local/share/netwatch/netwatch.db`. 
-
-To launch the TUI client to read the daemon's database:
-1. Create or edit your configuration file (e.g. `config.toml`) to point to the system-wide database path:
-   ```toml
-   database = "/var/lib/netwatch/.local/share/netwatch/netwatch.db"
-   ```
-2. Run the client pointing to that configuration:
-   ```bash
-   sudo ./target/release/netwatch --config config.toml
-   ```
-   *(Running with `sudo` or as the `netwatch` user ensures the client has permissions to read the SQLite database.)*
-
-*To exit the TUI interface, press `q`.*
-
-### Docker Testing (Alternative)
-If you are testing this inside a standard Docker container (where systemd is not booted by default), you can run the daemon in the background using `nohup` instead:
-```bash
-# Start daemon in the background
-nohup ./target/release/netwatchd > /var/log/netwatchd.log 2>&1 &
-
-# Run TUI client
+# Launch the interactive terminal UI
 ./target/release/netwatch
 ```
+*(Press `q` to exit the TUI.)*
+
+---
+
+## Production Service Setup
+
+For standard Linux host deployments, you can run the background daemon as a user-level service or a system-wide service using `systemd`.
+
+### Option 1: User-level Service (Starts when you log in)
+
+1. **Install the binary** to your local cargo bin:
+   ```bash
+   mkdir -p ~/.cargo/bin
+   cp target/release/netwatchd ~/.cargo/bin/
+   ```
+
+2. **Copy the service file**:
+   ```bash
+   mkdir -p ~/.config/systemd/user/
+   cp assets/systemd/netwatchd.service ~/.config/systemd/user/netwatchd.service
+   ```
+
+3. **Reload systemd, enable, and start the service**:
+   ```bash
+   systemctl --user daemon-reload
+   systemctl --user enable --now netwatchd.service
+   ```
+
+4. **Verify it is running**:
+   ```bash
+   systemctl --user status netwatchd.service
+   ```
+
+### Option 2: System-wide Service (Starts automatically at boot)
+
+1. **Install the binary** to `/usr/local/bin`:
+   ```bash
+   sudo cp target/release/netwatchd /usr/local/bin/
+   ```
+
+2. **Copy the service file**:
+   ```bash
+   sudo cp assets/systemd/netwatchd-system.service /etc/systemd/system/netwatchd.service
+   ```
+
+3. **Configure the runner user**:
+   Open `/etc/systemd/system/netwatchd.service` and replace `YOUR_USERNAME_HERE` with the system user you want to run the daemon (e.g., your username or `root`):
+   ```bash
+   sudo nano /etc/systemd/system/netwatchd.service
+   ```
+
+4. **Reload systemd, enable, and start the service**:
+   ```bash
+   sudo systemctl daemon-reload
+   sudo systemctl enable --now netwatchd.service
+   ```
+
+5. **Verify it is running**:
+   ```bash
+   sudo systemctl status netwatchd.service
+   ```
+
+---
 
 ## Configuration
 
