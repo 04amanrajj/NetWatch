@@ -181,4 +181,50 @@ fn daemon_action(action: DaemonAction) -> Result<()> {
         Ok(())
     };
 
+    match action {
+        DaemonAction::Status => {
+            let output = Command::new("systemctl")
+                .args(["--user", "status", "netwatchd"])
+                .output()
+                .context("systemctl status")?;
+            print!("{}", String::from_utf8_lossy(&output.stdout));
+            print!("{}", String::from_utf8_lossy(&output.stderr));
+        }
+        DaemonAction::Start => systemctl(&["start", "netwatchd"])?,
+        DaemonAction::Stop => systemctl(&["stop", "netwatchd"])?,
+    }
+    Ok(())
+}
+
+async fn export_data(
+    config: &Config,
+    db_path: &std::path::Path,
+    today: bool,
+    month: bool,
+    range: Option<&str>,
+    format: ExportFormat,
+) -> Result<()> {
+    let db = open_db(db_path).await?;
+    let range = parse_range_flag(today, month, range)?;
+    let output = netwatch_export::export(
+        &db,
+        ExportOptions {
+            format,
+            range,
+            interface_id: None,
+        },
+        config.units,
+    )
+    .await?;
+    print!("{output}");
+    Ok(())
+}
+
+async fn doctor(config: &Config, db_path: &std::path::Path) -> Result<()> {
+    println!("NetWatch Doctor");
+    println!("================");
+
+    let config_path = cli_config_path(config);
+    println!(
+
 }
