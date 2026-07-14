@@ -1,6 +1,6 @@
 # NetWatch
 
-A lightweight, SQLite-backed network traffic monitor for Linux systems with a stunning Terminal User Interface (TUI) and Command Line Interface (CLI).
+A lightweight, SQLite-backed network traffic monitor for Linux systems with a Terminal User Interface (TUI) and Command Line Interface (CLI).
 
 ## Features
 
@@ -38,17 +38,17 @@ This builds two binaries:
 - `target/release/netwatch`: The terminal user interface (TUI) client.
 
 ### 4. Enable Background Daemon (System-wide Service)
-Configure `netwatchd` to run automatically at boot as a system-wide `systemd` service:
+Configure `netwatchd` to run automatically at boot as a system-wide `systemd` service under a dedicated `netwatch` system user:
 
 ```bash
+# Create the netwatch system user and group with home directory /var/lib/netwatch
+sudo useradd -r -s /usr/sbin/nologin -d /var/lib/netwatch -m netwatch
+
 # Install the compiled daemon binary
 sudo cp target/release/netwatchd /usr/local/bin/
 
 # Copy the service configuration
 sudo cp assets/systemd/netwatchd-system.service /etc/systemd/system/netwatchd.service
-
-# Edit /etc/systemd/system/netwatchd.service to replace `YOUR_USERNAME_HERE` with your system username
-sudo nano /etc/systemd/system/netwatchd.service
 
 # Reload systemd and start/enable the service
 sudo systemctl daemon-reload
@@ -56,10 +56,19 @@ sudo systemctl enable --now netwatchd
 ```
 
 ### 5. Launch the Client (TUI)
-Once the service is active, run the compiled client to monitor network traffic in real-time:
-```bash
-./target/release/netwatch
-```
+Once the service is active, it writes metrics to `/var/lib/netwatch/.local/share/netwatch/netwatch.db`. 
+
+To launch the TUI client to read the daemon's database:
+1. Create or edit your configuration file (e.g. `config.toml`) to point to the system-wide database path:
+   ```toml
+   database = "/var/lib/netwatch/.local/share/netwatch/netwatch.db"
+   ```
+2. Run the client pointing to that configuration:
+   ```bash
+   sudo ./target/release/netwatch --config config.toml
+   ```
+   *(Running with `sudo` or as the `netwatch` user ensures the client has permissions to read the SQLite database.)*
+
 *To exit the TUI interface, press `q`.*
 
 ### Docker Testing (Alternative)

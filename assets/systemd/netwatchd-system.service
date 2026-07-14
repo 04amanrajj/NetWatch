@@ -4,7 +4,8 @@ After=network.target
 
 [Service]
 Type=simple
-User=YOUR_USERNAME_HERE
+User=netwatch
+Group=netwatch
 ExecStart=/usr/local/bin/netwatchd
 Restart=on-failure
 RestartSec=5
