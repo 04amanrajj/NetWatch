@@ -10,33 +10,66 @@ A lightweight, SQLite-backed network traffic monitor for Linux systems with a st
 - **Diagnostics**: `netwatch doctor` validates system config, database integrity, and interface collection.
 - **Packaging**: Ready-to-go `systemd` units, man pages, Arch `PKGBUILD`, and Debian/RedHat configuration templates.
 
-## Installation
+## Installation & Setup
 
-### 1. Build from Source
+### 1. Install System Dependencies
+Ensure you have the required compiler and SQLite development libraries installed:
+
+**On Ubuntu / Debian**:
+```bash
+sudo apt-get update
+sudo apt-get install -y build-essential pkg-config sqlite3 libsqlite3-dev curl
+```
+
+### 2. Install Rust and Cargo
+If you don't have Rust installed, install it using `rustup`:
+```bash
+curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
+source "$HOME/.cargo/env"
+```
+
+### 3. Build the Project
+Compile the binaries in release mode:
 ```bash
 cargo build --release
 ```
+This builds two binaries:
+- `target/release/netwatchd`: The background statistics daemon.
+- `target/release/netwatch`: The terminal user interface (TUI) client.
 
-### 2. Enable systemd Daemon Service
+### 4. Enable Background Daemon (System-wide Service)
+Configure `netwatchd` to run automatically at boot as a system-wide `systemd` service:
 
-You can run the background daemon as a **User-level service** (starts when you log in) or a **System-wide service** (starts automatically at boot).
-
-#### Option A: User-level Service (Default)
 ```bash
-mkdir -p ~/.config/systemd/user/
-cp assets/systemd/netwatchd.service ~/.config/systemd/user/netwatchd.service
-systemctl --user daemon-reload
-systemctl --user enable --now netwatchd.service
+# Install the compiled daemon binary
+sudo cp target/release/netwatchd /usr/local/bin/
+
+# Copy the service configuration
+sudo cp assets/systemd/netwatchd-system.service /etc/systemd/system/netwatchd.service
+
+# Edit /etc/systemd/system/netwatchd.service to replace `YOUR_USERNAME_HERE` with your system username
+sudo nano /etc/systemd/system/netwatchd.service
+
+# Reload systemd and start/enable the service
+sudo systemctl daemon-reload
+sudo systemctl enable --now netwatchd
 ```
 
-#### Option B: System-wide Service
+### 5. Launch the Client (TUI)
+Once the service is active, run the compiled client to monitor network traffic in real-time:
 ```bash
-sudo cp target/release/netwatchd /usr/local/bin/
-sudo cp assets/systemd/netwatchd-system.service /etc/systemd/system/netwatchd.service
-# Edit service to set your actual user:
-# sudo nano /etc/systemd/system/netwatchd.service
-sudo systemctl daemon-reload
-sudo systemctl enable --now netwatchd.service
+./target/release/netwatch
+```
+*To exit the TUI interface, press `q`.*
+
+### Docker Testing (Alternative)
+If you are testing this inside a standard Docker container (where systemd is not booted by default), you can run the daemon in the background using `nohup` instead:
+```bash
+# Start daemon in the background
+nohup ./target/release/netwatchd > /var/log/netwatchd.log 2>&1 &
+
+# Run TUI client
+./target/release/netwatch
 ```
 
 ## Configuration
