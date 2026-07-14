@@ -57,20 +57,27 @@ impl<'a> SysfsCollector<'a> {
     }
 }
 
+// fn read_u64_file(path: &Path) -> Result<u64> {
+//     let contents = fs::read_to_string(path).map_err(|e| {
+//         netwatch_core::NetWatchError::Collection(format!("failed to read {}: {e}", path.display()))
+//     })?;
+//     contents.trim().parse().map_err(|e| {
+//         netwatch_core::NetWatchError::Collection(format!(
+//             "invalid counter in {}: {e}",
+//             path.display()
+//         ))
+//     })
+// }
+
 fn read_u64_file(path: &Path) -> Result<u64> {
     let contents = fs::read_to_string(path).map_err(|e| {
+        netwatch_core::NetWatchError::Collection(format!("failed to read {}: {e}", path.display()))
+    })?;
+    let value = contents.trim().parse().map_err(|e| {
         netwatch_core::NetWatchError::Collection(format!(
-            "failed to read {}: {e}",
+            "invalid counter in {}: {e}",
             path.display()
         ))
     })?;
-    contents
-        .trim()
-        .parse()
-        .map_err(|e| {
-            netwatch_core::NetWatchError::Collection(format!(
-                "invalid counter in {}: {e}",
-                path.display()
-            ))
-        })
+    Ok(value)
 }
