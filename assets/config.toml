@@ -1,0 +1,26 @@
+# NetWatch System-wide Configuration
+# This file is used by the background daemon (netwatchd) and system-wide clients.
+
+# Path to the SQLite database
+database = "/var/lib/netwatch/netwatch.db"
+
+# The interval (in seconds) at which the daemon queries system interfaces.
+sample_interval = 1
+
+# A list of glob patterns for interface names that the daemon should skip collecting stats for.
+ignore = ["docker*", "virbr*", "veth*"]
+
+# The color/styling theme applied when launching the TUI monitor.
+theme = "default"
+
+# The format used to display traffic speeds and data sizes ("auto", "bytes", "bits").
+units = "auto"
+
+# The data retention period (in days) before historical raw samples are pruned.
+history_days = 365
+
+# The interval (in seconds) at which collected samples are written/committed to the SQLite database.
+batch_write_interval = 5
+
+# Whether to ignore the loopback (lo) local network interface.
+skip_loopback = true

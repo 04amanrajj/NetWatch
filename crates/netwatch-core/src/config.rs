@@ -47,7 +47,12 @@ fn default_sample_interval() -> u64 {
 }
 
 fn default_database() -> String {
-    "~/.local/share/netwatch/netwatch.db".into()
+    let system_db = "/var/lib/netwatch/netwatch.db";
+    if std::path::Path::new(system_db).exists() {
+        system_db.into()
+    } else {
+        "~/.local/share/netwatch/netwatch.db".into()
+    }
 }
 
 fn default_ignore() -> Vec<String> {
