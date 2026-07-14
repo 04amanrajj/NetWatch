@@ -6,7 +6,7 @@ After=network.target
 Type=simple
 User=netwatch
 Group=netwatch
-ExecStart=/usr/local/bin/netwatchd
+ExecStart=/usr/bin/netwatchd --config /etc/netwatch/config.toml
 Restart=on-failure
 RestartSec=5
 
