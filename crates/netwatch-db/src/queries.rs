@@ -40,17 +40,6 @@ pub async fn current_speeds(pool: &SqlitePool) -> Result<Totals> {
     }
 }
 
-impl Default for Totals {
-    fn default() -> Self {
-        Self {
-            download: 0,
-            upload: 0,
-            rx_rate: 0,
-            tx_rate: 0,
-        }
-    }
-}
-
 pub async fn interface_stats_today(pool: &SqlitePool) -> Result<Vec<InterfaceStats>> {
     let (start, end) = day_bounds(Utc::now());
     let interfaces = list_interfaces(pool).await?;
@@ -224,7 +213,11 @@ async fn sum_aggregated(
             .fetch_one(pool)
             .await?
     } else {
-        sqlx::query(&sql).bind(start).bind(end).fetch_one(pool).await?
+        sqlx::query(&sql)
+            .bind(start)
+            .bind(end)
+            .fetch_one(pool)
+            .await?
     };
 
     Ok((
@@ -268,7 +261,13 @@ pub async fn interface_detail(pool: &SqlitePool, interface_id: i64) -> Result<In
         .single()
         .unwrap();
 
-    let today = sum_range(pool, today_start.timestamp(), now.timestamp(), Some(interface_id)).await?;
+    let today = sum_range(
+        pool,
+        today_start.timestamp(),
+        now.timestamp(),
+        Some(interface_id),
+    )
+    .await?;
     let yesterday = sum_range(
         pool,
         yesterday_start.timestamp(),
@@ -276,7 +275,13 @@ pub async fn interface_detail(pool: &SqlitePool, interface_id: i64) -> Result<In
         Some(interface_id),
     )
     .await?;
-    let this_week = sum_range(pool, week_start.timestamp(), now.timestamp(), Some(interface_id)).await?;
+    let this_week = sum_range(
+        pool,
+        week_start.timestamp(),
+        now.timestamp(),
+        Some(interface_id),
+    )
+    .await?;
     let last_week = sum_range(
         pool,
         last_week_start.timestamp(),
@@ -284,7 +289,13 @@ pub async fn interface_detail(pool: &SqlitePool, interface_id: i64) -> Result<In
         Some(interface_id),
     )
     .await?;
-    let this_month = sum_range(pool, month_start.timestamp(), now.timestamp(), Some(interface_id)).await?;
+    let this_month = sum_range(
+        pool,
+        month_start.timestamp(),
+        now.timestamp(),
+        Some(interface_id),
+    )
+    .await?;
     let last_month = sum_range(
         pool,
         prev_month_start.timestamp(),
@@ -292,7 +303,13 @@ pub async fn interface_detail(pool: &SqlitePool, interface_id: i64) -> Result<In
         Some(interface_id),
     )
     .await?;
-    let this_year = sum_range(pool, year_start.timestamp(), now.timestamp(), Some(interface_id)).await?;
+    let this_year = sum_range(
+        pool,
+        year_start.timestamp(),
+        now.timestamp(),
+        Some(interface_id),
+    )
+    .await?;
     let total = sum_range(pool, iface.first_seen, now.timestamp(), Some(interface_id)).await?;
     let (cur_rx, cur_tx) = latest_rates(pool, interface_id).await?;
 
@@ -338,7 +355,11 @@ pub async fn interface_detail(pool: &SqlitePool, interface_id: i64) -> Result<In
     })
 }
 
-pub async fn history_table(pool: &SqlitePool, start_ts: i64, end_ts: i64) -> Result<Vec<HistoryEntry>> {
+pub async fn history_table(
+    pool: &SqlitePool,
+    start_ts: i64,
+    end_ts: i64,
+) -> Result<Vec<HistoryEntry>> {
     let rows = sqlx::query(
         r#"
         SELECT
@@ -380,7 +401,11 @@ pub async fn history_table(pool: &SqlitePool, start_ts: i64, end_ts: i64) -> Res
         .collect())
 }
 
-async fn history_from_hourly(pool: &SqlitePool, start_ts: i64, end_ts: i64) -> Result<Vec<HistoryEntry>> {
+async fn history_from_hourly(
+    pool: &SqlitePool,
+    start_ts: i64,
+    end_ts: i64,
+) -> Result<Vec<HistoryEntry>> {
     let rows = sqlx::query(
         r#"
         SELECT

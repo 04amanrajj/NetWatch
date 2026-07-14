@@ -91,9 +91,7 @@ async fn main() -> Result<()> {
         Some(Commands::Live) => run_tui(&config, &db_path, Page::Live).await?,
         Some(Commands::History) => run_tui(&config, &db_path, Page::History).await?,
         Some(Commands::Today) => print_summary(&config, &db_path, TimeRange::Today).await?,
-        Some(Commands::Yesterday) => {
-            print_summary(&config, &db_path, TimeRange::Yesterday).await?
-        }
+        Some(Commands::Yesterday) => print_summary(&config, &db_path, TimeRange::Yesterday).await?,
         Some(Commands::Interfaces) => print_interfaces(&config, &db_path).await?,
         Some(Commands::Daemon { action }) => daemon_action(action)?,
         Some(Commands::Export {
@@ -102,7 +100,15 @@ async fn main() -> Result<()> {
             range,
             format,
         }) => {
-            export_data(&config, &db_path, today, month, range.as_deref(), format.into()).await?
+            export_data(
+                &config,
+                &db_path,
+                today,
+                month,
+                range.as_deref(),
+                format.into(),
+            )
+            .await?
         }
         Some(Commands::Doctor) => doctor(&config, &db_path).await?,
     }
@@ -114,25 +120,16 @@ async fn open_db(path: &std::path::Path) -> Result<Database> {
     if path.exists() {
         match Database::open_readonly(path).await {
             Ok(db) => Ok(db),
-            Err(_) => Database::open(path, false)
-                .await
-                .context("open database"),
+            Err(_) => Database::open(path, false).await.context("open database"),
         }
     } else {
-        Database::open(path, true)
-            .await
-            .context("create database")
+        Database::open(path, true).await.context("create database")
     }
 }
 
 async fn run_tui(config: &Config, db_path: &std::path::Path, page: Page) -> Result<()> {
     let db = open_db(db_path).await?;
-    netwatch_tui::run(
-        config,
-        &db,
-        RunOptions { initial_page: page },
-    )
-    .await
+    netwatch_tui::run(config, &db, RunOptions { initial_page: page }).await
 }
 
 async fn print_summary(config: &Config, db_path: &std::path::Path, range: TimeRange) -> Result<()> {
@@ -155,7 +152,10 @@ async fn print_interfaces(config: &Config, db_path: &std::path::Path) -> Result<
     let db = open_db(db_path).await?;
     let stats = db.interface_stats_today().await?;
     let units = config.units;
-    println!("{:<16} {:>12} {:>12} {:>8}", "Interface", "Download", "Upload", "Status");
+    println!(
+        "{:<16} {:>12} {:>12} {:>8}",
+        "Interface", "Download", "Upload", "Status"
+    );
     for iface in stats {
         println!(
             "{:<16} {:>12} {:>12} {:>8}",

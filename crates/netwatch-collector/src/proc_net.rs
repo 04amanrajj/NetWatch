@@ -18,9 +18,9 @@ pub fn collect_from_proc(config: &Config, proc_path: &Path) -> Result<Vec<Interf
         if line.is_empty() {
             continue;
         }
-        let (name, rest) = line
-            .split_once(':')
-            .ok_or_else(|| netwatch_core::NetWatchError::Collection("invalid /proc/net/dev line".into()))?;
+        let (name, rest) = line.split_once(':').ok_or_else(|| {
+            netwatch_core::NetWatchError::Collection("invalid /proc/net/dev line".into())
+        })?;
         let name = name.trim();
         if config.should_ignore(name)? {
             continue;

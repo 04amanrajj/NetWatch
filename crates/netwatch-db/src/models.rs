@@ -53,7 +53,7 @@ pub struct InterfaceStats {
     pub tx_rate: u64,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Default, Clone, Serialize, Deserialize)]
 pub struct Totals {
     pub download: u64,
     pub upload: u64,

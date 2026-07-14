@@ -18,13 +18,7 @@ pub fn stat_line(label: &str, value: &str, theme: &Theme) -> Paragraph<'static> 
     Paragraph::new(text).style(Style::default().fg(theme.text))
 }
 
-pub fn draw_sparkline(
-    frame: &mut Frame,
-    area: Rect,
-    values: &[u64],
-    title: &str,
-    theme: &Theme,
-) {
+pub fn draw_sparkline(frame: &mut Frame, area: Rect, values: &[u64], title: &str, theme: &Theme) {
     let block = titled_block(title, theme);
     let inner = block.inner(area);
     frame.render_widget(block, area);

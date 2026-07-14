@@ -228,12 +228,7 @@ fn draw_history(frame: &mut Frame, area: Rect, app: &App, theme: &Theme) {
     let units = app.config.units;
     let title = format!("History — {}", app.history_range_label());
     let header = Row::new(vec![
-        "Date",
-        "Download",
-        "Upload",
-        "Total",
-        "Peak DL",
-        "Peak UL",
+        "Date", "Download", "Upload", "Total", "Peak DL", "Peak UL",
     ])
     .style(theme.title_style())
     .bottom_margin(1);
@@ -323,14 +318,8 @@ fn draw_live(frame: &mut Frame, area: Rect, app: &App, theme: &Theme) {
         .interfaces
         .iter()
         .map(|iface| {
-            let peak = format_rate(
-                iface.rx_rate.max(iface.tx_rate),
-                units,
-            );
-            let avg = format_rate(
-                (iface.rx_rate + iface.tx_rate) / 2,
-                units,
-            );
+            let peak = format_rate(iface.rx_rate.max(iface.tx_rate), units);
+            let avg = format_rate((iface.rx_rate + iface.tx_rate) / 2, units);
             Row::new(vec![
                 Cell::from(iface.name.clone()),
                 Cell::from(format_rate(iface.rx_rate, units)),

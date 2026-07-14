@@ -3,8 +3,7 @@ mod sysfs;
 
 use std::path::Path;
 
-use chrono::Utc;
-use netwatch_core::{Config, InterfaceSnapshot, OperState, Result};
+use netwatch_core::{Config, InterfaceSnapshot, Result};
 
 pub use sysfs::SysfsCollector;
 
@@ -32,8 +31,9 @@ pub fn snapshot_from_parts(
     mac: Option<&str>,
     rx: u64,
     tx: u64,
-    state: OperState,
+    state: netwatch_core::OperState,
 ) -> InterfaceSnapshot {
+    use chrono::Utc;
     InterfaceSnapshot {
         name: name.into(),
         mac: mac.map(String::from),

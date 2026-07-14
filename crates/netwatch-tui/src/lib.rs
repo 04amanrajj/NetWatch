@@ -87,7 +87,9 @@ pub async fn run(config: &Config, db: &Database, options: RunOptions) -> Result<
                         KeyCode::Tab => app.next_history_range(),
                         _ => {}
                     }
-                    if key.modifiers.contains(KeyModifiers::CONTROL) && key.code == KeyCode::Char('c') {
+                    if key.modifiers.contains(KeyModifiers::CONTROL)
+                        && key.code == KeyCode::Char('c')
+                    {
                         app.should_quit = true;
                     }
                 }

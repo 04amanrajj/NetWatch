@@ -28,10 +28,7 @@ pub struct ComputedSample {
     pub anomaly: Option<AlertKind>,
 }
 
-pub fn compute_rate(
-    prev: Option<&PreviousSample>,
-    snapshot: &InterfaceSnapshot,
-) -> RateSample {
+pub fn compute_rate(prev: Option<&PreviousSample>, snapshot: &InterfaceSnapshot) -> RateSample {
     let ts = snapshot.timestamp.timestamp();
     let Some(prev) = prev else {
         return RateSample {
@@ -147,7 +144,7 @@ fn format_bits(bits: u64) -> String {
 }
 
 pub fn day_bounds(now: DateTime<Utc>) -> (DateTime<Utc>, DateTime<Utc>) {
-    use chrono::{Datelike, TimeZone, Timelike};
+    use chrono::{Datelike, TimeZone};
     let start = Utc
         .with_ymd_and_hms(now.year(), now.month(), now.day(), 0, 0, 0)
         .single()

@@ -39,7 +39,8 @@ impl<'a> SysfsCollector<'a> {
                 .map(|s| s.trim().to_string())
                 .filter(|s| !s.is_empty() && s != "00:00:00:00:00:00");
             let operstate = fs::read_to_string(iface_dir.join("operstate"))
-                .map(|s| OperState::from_str(&s))
+                .ok()
+                .and_then(|s| s.parse().ok())
                 .unwrap_or(OperState::Unknown);
 
             snapshots.push(InterfaceSnapshot {

@@ -6,18 +6,13 @@ use serde::{Deserialize, Serialize};
 
 use crate::error::{NetWatchError, Result};
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Default, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "lowercase")]
 pub enum Units {
+    #[default]
     Auto,
     Bytes,
     Bits,
-}
-
-impl Default for Units {
-    fn default() -> Self {
-        Self::Auto
-    }
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -56,11 +51,7 @@ fn default_database() -> String {
 }
 
 fn default_ignore() -> Vec<String> {
-    vec![
-        "docker*".into(),
-        "virbr*".into(),
-        "veth*".into(),
-    ]
+    vec!["docker*".into(), "virbr*".into(), "veth*".into()]
 }
 
 fn default_theme() -> String {
@@ -96,14 +87,12 @@ impl Default for Config {
 
 impl Config {
     pub fn load(path: Option<&Path>) -> Result<Self> {
-        let path = path
-            .map(PathBuf::from)
-            .unwrap_or_else(default_config_path);
+        let path = path.map(PathBuf::from).unwrap_or_else(default_config_path);
 
         if path.exists() {
             let contents = fs::read_to_string(&path)?;
-            let mut config: Config = toml::from_str(&contents)
-                .map_err(|e| NetWatchError::Config(e.to_string()))?;
+            let mut config: Config =
+                toml::from_str(&contents).map_err(|e| NetWatchError::Config(e.to_string()))?;
             config.validate()?;
             Ok(config)
         } else {

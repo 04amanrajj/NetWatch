@@ -29,9 +29,7 @@ impl Default for Theme {
 
 impl Theme {
     pub fn title_style(&self) -> Style {
-        Style::default()
-            .fg(self.title)
-            .add_modifier(Modifier::BOLD)
+        Style::default().fg(self.title).add_modifier(Modifier::BOLD)
     }
 
     pub fn border_style(&self) -> Style {

@@ -8,15 +8,19 @@ pub enum OperState {
     Unknown,
 }
 
-impl OperState {
-    pub fn from_str(s: &str) -> Self {
+impl std::str::FromStr for OperState {
+    type Err = std::convert::Infallible;
+
+    fn from_str(s: &str) -> std::result::Result<Self, Self::Err> {
         match s.trim().to_lowercase().as_str() {
-            "up" => Self::Up,
-            "down" => Self::Down,
-            _ => Self::Unknown,
+            "up" => Ok(Self::Up),
+            "down" => Ok(Self::Down),
+            _ => Ok(Self::Unknown),
         }
     }
+}
 
+impl OperState {
     pub fn as_str(&self) -> &'static str {
         match self {
             Self::Up => "UP",
@@ -69,7 +73,7 @@ pub enum TimeRange {
 
 impl TimeRange {
     pub fn bounds(&self, now: DateTime<Utc>) -> (DateTime<Utc>, DateTime<Utc>) {
-        use chrono::{Datelike, Duration, TimeZone, Timelike};
+        use chrono::{Datelike, Duration, TimeZone};
 
         let start_of_day = |dt: DateTime<Utc>| {
             Utc.with_ymd_and_hms(dt.year(), dt.month(), dt.day(), 0, 0, 0)

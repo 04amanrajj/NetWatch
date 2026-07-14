@@ -110,12 +110,7 @@ impl Database {
         Ok(row.map(|r| r.get::<String, _>("value")))
     }
 
-    pub async fn upsert_interface(
-        &self,
-        name: &str,
-        mac: Option<&str>,
-        ts: i64,
-    ) -> Result<i64> {
+    pub async fn upsert_interface(&self, name: &str, mac: Option<&str>, ts: i64) -> Result<i64> {
         if let Some(existing) = sqlx::query_as::<_, InterfaceRow>(
             "SELECT id, name, mac, first_seen, last_seen FROM interfaces WHERE name = ?1",
         )
@@ -123,12 +118,14 @@ impl Database {
         .fetch_optional(&self.pool)
         .await?
         {
-            sqlx::query("UPDATE interfaces SET last_seen = ?1, mac = COALESCE(?2, mac) WHERE id = ?3")
-                .bind(ts)
-                .bind(mac)
-                .bind(existing.id)
-                .execute(&self.pool)
-                .await?;
+            sqlx::query(
+                "UPDATE interfaces SET last_seen = ?1, mac = COALESCE(?2, mac) WHERE id = ?3",
+            )
+            .bind(ts)
+            .bind(mac)
+            .bind(existing.id)
+            .execute(&self.pool)
+            .await?;
             return Ok(existing.id);
         }
 
@@ -190,12 +187,14 @@ impl Database {
         .fetch_optional(&mut **tx)
         .await?
         {
-            sqlx::query("UPDATE interfaces SET last_seen = ?1, mac = COALESCE(?2, mac) WHERE id = ?3")
-                .bind(ts)
-                .bind(mac)
-                .bind(existing.id)
-                .execute(&mut **tx)
-                .await?;
+            sqlx::query(
+                "UPDATE interfaces SET last_seen = ?1, mac = COALESCE(?2, mac) WHERE id = ?3",
+            )
+            .bind(ts)
+            .bind(mac)
+            .bind(existing.id)
+            .execute(&mut **tx)
+            .await?;
             return Ok(existing.id);
         }
 
@@ -212,14 +211,12 @@ impl Database {
     }
 
     pub async fn insert_alert(&self, ts: i64, kind: &str, message: &str) -> Result<()> {
-        sqlx::query(
-            "INSERT INTO alerts (ts, kind, message, acknowledged) VALUES (?1, ?2, ?3, 0)",
-        )
-        .bind(ts)
-        .bind(kind)
-        .bind(message)
-        .execute(&self.pool)
-        .await?;
+        sqlx::query("INSERT INTO alerts (ts, kind, message, acknowledged) VALUES (?1, ?2, ?3, 0)")
+            .bind(ts)
+            .bind(kind)
+            .bind(message)
+            .execute(&self.pool)
+            .await?;
         Ok(())
     }
 
@@ -251,11 +248,7 @@ impl Database {
         queries::interface_detail(&self.pool, interface_id).await
     }
 
-    pub async fn history_table(
-        &self,
-        start_ts: i64,
-        end_ts: i64,
-    ) -> Result<Vec<HistoryEntry>> {
+    pub async fn history_table(&self, start_ts: i64, end_ts: i64) -> Result<Vec<HistoryEntry>> {
         queries::history_table(&self.pool, start_ts, end_ts).await
     }
 

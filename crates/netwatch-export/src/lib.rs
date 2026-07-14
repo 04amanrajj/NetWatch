@@ -5,7 +5,6 @@ use chrono::Utc;
 use netwatch_core::{TimeRange, Units};
 use netwatch_db::Database;
 use netwatch_stats::format_bytes;
-use serde_json;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ExportFormat {
@@ -65,7 +64,10 @@ fn export_markdown(
         out,
         "| Date | Download | Upload | Total | Peak DL | Peak UL |"
     )?;
-    writeln!(out, "|------|----------|--------|-------|---------|---------|")?;
+    writeln!(
+        out,
+        "|------|----------|--------|-------|---------|---------|"
+    )?;
     for entry in history {
         writeln!(
             out,
