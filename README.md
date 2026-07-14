@@ -149,6 +149,45 @@ batch_write_interval = 5
 * **`batch_write_interval`** (default: `5`): The interval (in seconds) at which collected samples are written/committed to the SQLite database in batches. This minimizes disk write operations and lock contention.
 * **`skip_loopback`** (default: `true`): A boolean config option (can be set to `true`/`false`) specifying whether to ignore the loopback (`lo`) local network interface.
 
+## Uninstallation / Removal
+
+To completely clean up and remove NetWatch from your system:
+
+### 1. Stop and Disable the Daemon Service
+If you configured systemd services, stop and remove them:
+
+* **For User-level Service (Option 1)**:
+  ```bash
+  systemctl --user disable --now netwatchd.service
+  rm -f ~/.config/systemd/user/netwatchd.service
+  systemctl --user daemon-reload
+  ```
+* **For System-wide Service (Option 2)**:
+  ```bash
+  sudo systemctl disable --now netwatchd.service
+  sudo rm -f /etc/systemd/system/netwatchd.service
+  sudo systemctl daemon-reload
+  ```
+
+### 2. Remove Binaries
+Delete the compiled binaries from your executable path:
+
+* **User Binaries**:
+  ```bash
+  rm -f ~/.cargo/bin/netwatchd ~/.cargo/bin/netwatch
+  ```
+* **System Binaries**:
+  ```bash
+  sudo rm -f /usr/local/bin/netwatchd /usr/local/bin/netwatch
+  ```
+
+### 3. Remove Configuration and Database Files
+To permanently delete all collected network traffic logs and custom settings:
+```bash
+rm -rf ~/.config/netwatch
+rm -rf ~/.local/share/netwatch
+```
+
 ## License
 
 This project is licensed under the MIT License - see the LICENSE file for details.
