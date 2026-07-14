@@ -37,3 +37,17 @@ Show historical usage records.
 .B daemon status|start|stop
 Query or control the background daemon service.
 .TP
+.B export
+Export database samples to CSV, JSON, or Markdown formats.
+.TP
+.B doctor
+Perform system diagnostics and database health checks.
+.SH FILES
+.TP
+.I ~/.config/netwatch/config.toml
+The configuration file for NetWatch workspace.
+.TP
+.I ~/.local/share/netwatch/netwatch.db
+The SQLite WAL database storing historical network samples.
+.SH AUTHOR
+04amanrajj <04.aman.raj@gmail.com>
