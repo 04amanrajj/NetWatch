@@ -116,7 +116,7 @@ For standard Linux host deployments, you can run the background daemon as a user
 
 5. **Verify it is running**:
    ```bash
-   sudo systemctl status netwatchd.service
+   systemctl status netwatchd.service
    ```
 
 ---
@@ -134,6 +134,20 @@ units = "auto"
 history_days = 365
 batch_write_interval = 5
 ```
+
+### Options Breakdown
+
+* **`sample_interval`** (default: `1`): The interval (in seconds) at which the background daemon `netwatchd` queries system interfaces. A lower value provides more real-time/granular stats but consumes slightly more CPU.
+* **`database`** (default: `"~/.local/share/netwatch/netwatch.db"`): The file path where the SQLite database is located. Tilde (`~`) is automatically expanded to the user's home directory.
+* **`ignore`** (default: `["docker*", "virbr*", "veth*"]`): A list of glob patterns for interface names that the daemon should skip collecting stats for. This prevents virtual bridge or container adapters from cluttering your logs.
+* **`theme`** (default: `"default"`): The color/styling theme applied when launching the TUI monitor (`netwatch`).
+* **`units`** (default: `"auto"`): The format used to display traffic speeds and data sizes. Options include:
+  * `"auto"`: Formats automatically to the most appropriate human-readable size (e.g. KB, MB, kbps, Mbps).
+  * `"bytes"`: Forces output in Bytes/second and Megabytes.
+  * `"bits"`: Forces output in Bits/second (typical ISP speed format).
+* **`history_days`** (default: `365`): The data retention period (in days). Raw database samples older than this threshold are pruned to prevent the database from growing indefinitely.
+* **`batch_write_interval`** (default: `5`): The interval (in seconds) at which collected samples are written/committed to the SQLite database in batches. This minimizes disk write operations and lock contention.
+* **`skip_loopback`** (default: `true`): A boolean config option (can be set to `true`/`false`) specifying whether to ignore the loopback (`lo`) local network interface.
 
 ## License
 
