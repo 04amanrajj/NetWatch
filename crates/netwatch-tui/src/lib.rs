@@ -43,49 +43,108 @@ pub async fn run(config: &Config, db: &Database, options: RunOptions) -> Result<
     let theme = theme::Theme::default();
     let mut app = App::new(config.clone(), options.initial_page);
 
-    let tick_rate = Duration::from_secs(1);
+    let tick_rate = Duration::from_millis(1000);
     let mut last_tick = std::time::Instant::now();
 
-    loop {
-        app.refresh(db).await?;
+    // Initial database fetch before starting the loop
+    app.refresh(db).await?;
 
+    loop {
         terminal.draw(|frame| {
             pages::draw(frame, &app, &theme);
         })?;
 
+        let mut should_refresh = false;
         let timeout = tick_rate.saturating_sub(last_tick.elapsed());
+        
         if event::poll(timeout)? {
             if let Event::Key(key) = event::read()? {
                 if key.kind == KeyEventKind::Press {
-                    match key.code {
-                        KeyCode::Char('q') | KeyCode::Esc if app.page != Page::Search => {
-                            app.should_quit = true;
+                    if app.page == Page::Settings {
+                        match key.code {
+                            KeyCode::Char('q') | KeyCode::Esc => {
+                                app.page = app.previous_page;
+                            }
+                            KeyCode::Up => {
+                                app.move_settings_selection(-1);
+                            }
+                            KeyCode::Down => {
+                                app.move_settings_selection(1);
+                            }
+                            KeyCode::Left => {
+                                app.adjust_setting(-1);
+                            }
+                            KeyCode::Right => {
+                                app.adjust_setting(1);
+                            }
+                            KeyCode::Enter => {
+                                if app.handle_settings_enter()? {
+                                    should_refresh = true;
+                                }
+                            }
+                            _ => {}
                         }
-                        KeyCode::Char('?') => app.show_help = !app.show_help,
-                        KeyCode::Char('i') => app.page = Page::Interfaces,
-                        KeyCode::Char('h') => app.page = Page::History,
-                        KeyCode::Char('g') => app.page = Page::Graph,
-                        KeyCode::Char('l') => app.page = Page::Live,
-                        KeyCode::Char('/') => {
-                            app.page = Page::Search;
-                            app.search_query.clear();
+                    } else {
+                        match key.code {
+                            KeyCode::Char('q') | KeyCode::Esc if app.page != Page::Search => {
+                                app.should_quit = true;
+                            }
+                            KeyCode::Char('?') => app.show_help = !app.show_help,
+                            KeyCode::Char('s') => {
+                                app.enter_settings();
+                            }
+                            KeyCode::Char('i') => {
+                                app.page = Page::Interfaces;
+                                should_refresh = true;
+                            }
+                            KeyCode::Char('h') => {
+                                app.page = Page::History;
+                                should_refresh = true;
+                            }
+                            KeyCode::Char('g') => {
+                                app.page = Page::Graph;
+                                should_refresh = true;
+                            }
+                            KeyCode::Char('l') => {
+                                app.page = Page::Live;
+                                should_refresh = true;
+                            }
+                            KeyCode::Char('/') => {
+                                app.page = Page::Search;
+                                app.search_query.clear();
+                            }
+                            KeyCode::Char('1') => {
+                                app.page = Page::Home;
+                                should_refresh = true;
+                            }
+                            KeyCode::Enter => {
+                                app.handle_enter();
+                                should_refresh = true;
+                            }
+                            KeyCode::Up => app.move_selection(-1),
+                            KeyCode::Down => app.move_selection(1),
+                            KeyCode::Left => {
+                                app.adjust_range(-1);
+                                should_refresh = true;
+                            }
+                            KeyCode::Right => {
+                                app.adjust_range(1);
+                                should_refresh = true;
+                            }
+                            KeyCode::Char(c) if app.page == Page::Search => {
+                                app.search_query.push(c);
+                                app.apply_search();
+                            }
+                            KeyCode::Backspace if app.page == Page::Search => {
+                                app.search_query.pop();
+                                app.apply_search();
+                            }
+                            KeyCode::Tab => {
+                                app.next_history_range();
+                                should_refresh = true;
+                            }
+                            _ => {}
                         }
-                        KeyCode::Char('1') => app.page = Page::Home,
-                        KeyCode::Enter => app.handle_enter(),
-                        KeyCode::Up => app.move_selection(-1),
-                        KeyCode::Down => app.move_selection(1),
-                        KeyCode::Left => app.adjust_range(-1),
-                        KeyCode::Right => app.adjust_range(1),
-                        KeyCode::Char(c) if app.page == Page::Search => {
-                            app.search_query.push(c);
-                            app.apply_search();
-                        }
-                        KeyCode::Backspace if app.page == Page::Search => {
-                            app.search_query.pop();
-                            app.apply_search();
-                        }
-                        KeyCode::Tab => app.next_history_range(),
-                        _ => {}
                     }
                     if key.modifiers.contains(KeyModifiers::CONTROL)
                         && key.code == KeyCode::Char('c')
@@ -96,8 +155,12 @@ pub async fn run(config: &Config, db: &Database, options: RunOptions) -> Result<
             }
         }
 
-        if last_tick.elapsed() >= tick_rate {
-            last_tick = std::time::Instant::now();
+        // Refresh database stats only on timer tick or if user requested a page/range change
+        if last_tick.elapsed() >= tick_rate || should_refresh {
+            app.refresh(db).await?;
+            if last_tick.elapsed() >= tick_rate {
+                last_tick = std::time::Instant::now();
+            }
         }
 
         if app.should_quit {

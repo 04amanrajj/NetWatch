@@ -20,7 +20,7 @@ units = "auto"
 history_days = 365
 
 # The interval (in seconds) at which collected samples are written/committed to the SQLite database.
-batch_write_interval = 5
+batch_write_interval = 1
 
 # Whether to ignore the loopback (lo) local network interface.
 skip_loopback = true

@@ -68,7 +68,7 @@ fn default_history_days() -> u32 {
 }
 
 fn default_batch_write_interval() -> u64 {
-    5
+    1
 }
 
 fn default_skip_loopback() -> bool {
@@ -92,10 +92,19 @@ impl Default for Config {
 
 impl Config {
     pub fn load(path: Option<&Path>) -> Result<Self> {
-        let path = path.map(PathBuf::from).unwrap_or_else(default_config_path);
+        let resolve_path = if let Some(p) = path {
+            PathBuf::from(p)
+        } else {
+            let user_config = default_config_path();
+            if user_config.exists() {
+                user_config
+            } else {
+                PathBuf::from("/etc/netwatch/config.toml")
+            }
+        };
 
-        if path.exists() {
-            let contents = fs::read_to_string(&path)?;
+        if resolve_path.exists() {
+            let contents = fs::read_to_string(&resolve_path)?;
             let mut config: Config =
                 toml::from_str(&contents).map_err(|e| NetWatchError::Config(e.to_string()))?;
             config.validate()?;
@@ -144,6 +153,17 @@ impl Config {
             }
         }
         Ok(false)
+    }
+
+    pub fn save(&self, path: Option<&Path>) -> Result<()> {
+        let path = path.map(PathBuf::from).unwrap_or_else(default_config_path);
+        if let Some(parent) = path.parent() {
+            fs::create_dir_all(parent)?;
+        }
+        let toml_str = toml::to_string_pretty(self)
+            .map_err(|e| NetWatchError::Config(format!("Failed to serialize config: {e}")))?;
+        fs::write(path, toml_str)?;
+        Ok(())
     }
 }
 

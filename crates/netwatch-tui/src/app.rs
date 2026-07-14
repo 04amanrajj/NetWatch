@@ -12,6 +12,7 @@ pub enum Page {
     Graph,
     Live,
     Search,
+    Settings,
 }
 
 pub struct App {
@@ -36,10 +37,14 @@ pub struct App {
     pub db_size: u64,
     pub alert_count: usize,
     pub filtered_interfaces: Vec<usize>,
+
+    pub temp_config: Config,
+    pub settings_selection: usize,
 }
 
 impl App {
     pub fn new(config: Config, initial_page: Page) -> Self {
+        let temp_config = config.clone();
         Self {
             config,
             page: initial_page,
@@ -76,6 +81,68 @@ impl App {
             db_size: 0,
             alert_count: 0,
             filtered_interfaces: Vec::new(),
+            temp_config,
+            settings_selection: 0,
+        }
+    }
+
+    pub fn enter_settings(&mut self) {
+        self.temp_config = self.config.clone();
+        self.settings_selection = 0;
+        self.previous_page = self.page;
+        self.page = Page::Settings;
+    }
+
+    pub fn move_settings_selection(&mut self, delta: i32) {
+        let next = self.settings_selection as i32 + delta;
+        self.settings_selection = next.clamp(0, 6) as usize;
+    }
+
+    pub fn adjust_setting(&mut self, delta: i32) {
+        match self.settings_selection {
+            0 => {
+                let current = self.temp_config.units;
+                use netwatch_core::Units;
+                self.temp_config.units = match (current, delta) {
+                    (Units::Auto, 1) => Units::Bytes,
+                    (Units::Auto, -1) => Units::Bits,
+                    (Units::Bytes, 1) => Units::Bits,
+                    (Units::Bytes, -1) => Units::Auto,
+                    (Units::Bits, 1) => Units::Auto,
+                    (Units::Bits, -1) => Units::Bytes,
+                    _ => current,
+                };
+            }
+            1 => {
+                self.temp_config.skip_loopback = !self.temp_config.skip_loopback;
+            }
+            2 => {
+                let current = self.temp_config.sample_interval as i32;
+                self.temp_config.sample_interval = (current + delta).clamp(1, 60) as u64;
+            }
+            3 => {
+                let current = self.temp_config.batch_write_interval as i32;
+                self.temp_config.batch_write_interval = (current + delta).clamp(1, 60) as u64;
+            }
+            4 => {
+                let current = self.temp_config.history_days as i32;
+                self.temp_config.history_days = (current + delta * 30).clamp(30, 1000) as u32;
+            }
+            _ => {}
+        }
+    }
+
+    pub fn handle_settings_enter(&mut self) -> anyhow::Result<bool> {
+        if self.settings_selection == 5 {
+            self.temp_config.save(None)?;
+            self.config = self.temp_config.clone();
+            self.page = self.previous_page;
+            Ok(true)
+        } else if self.settings_selection == 6 {
+            self.page = self.previous_page;
+            Ok(false)
+        } else {
+            Ok(false)
         }
     }
 

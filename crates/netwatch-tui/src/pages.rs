@@ -28,6 +28,7 @@ pub fn draw(frame: &mut Frame, app: &App, theme: &Theme) {
         Page::Graph => draw_graph(frame, chunks[1], app, theme),
         Page::Live => draw_live(frame, chunks[1], app, theme),
         Page::Search => draw_search(frame, chunks[1], app, theme),
+        Page::Settings => draw_settings(frame, chunks[1], app, theme),
     }
 
     draw_footer(frame, chunks[2], app, theme);
@@ -49,13 +50,14 @@ fn draw_header(frame: &mut Frame, area: Rect, app: &App, theme: &Theme) {
 
 fn draw_footer(frame: &mut Frame, area: Rect, app: &App, theme: &Theme) {
     let keys = match app.page {
-        Page::Home => "i:Interfaces h:History g:Graph l:Live /:Search ?:Help q:Quit",
+        Page::Home => "i:Interfaces h:History g:Graph l:Live s:Settings /:Search ?:Help q:Quit",
         Page::Interfaces => "Enter:Detail Esc/q:Back ?:Help",
         Page::InterfaceDetail => "Esc/q:Back ?:Help",
         Page::History => "←/→:Range Tab:Next ?:Help q:Quit",
         Page::Graph => "←/→:Resolution ?:Help q:Quit",
         Page::Live => "q:Quit ?:Help",
         Page::Search => "Type to filter Esc:Back",
+        Page::Settings => "↑/↓:Navigate ←/→:Adjust Enter:Select Esc/q:Back",
     };
     frame.render_widget(
         Paragraph::new(keys).style(Style::default().fg(theme.dim)),
@@ -373,7 +375,7 @@ fn draw_search(frame: &mut Frame, area: Rect, app: &App, theme: &Theme) {
 }
 
 fn draw_help(frame: &mut Frame, _app: &App, theme: &Theme) {
-    let area = centered_rect(60, 40, frame.area());
+    let area = centered_rect(60, 42, frame.area());
     let text = "\
 NetWatch — keyboard shortcuts\n\n\
 q/Esc   Quit or go back\n\
@@ -381,6 +383,7 @@ i       Interfaces\n\
 h       History\n\
 g       Graph\n\
 l       Live monitor\n\
+s       Settings\n\
 /       Search\n\
 Enter   Open interface detail\n\
 ↑/↓     Navigate lists\n\
@@ -410,4 +413,56 @@ fn centered_rect(percent_x: u16, percent_y: u16, r: Rect) -> Rect {
             Constraint::Percentage((100 - percent_x) / 2),
         ])
         .split(popup_layout[1])[1]
+}
+
+fn draw_settings(frame: &mut Frame, area: Rect, app: &App, theme: &Theme) {
+    let chunks = Layout::default()
+        .direction(Direction::Vertical)
+        .margin(1)
+        .constraints([
+            Constraint::Length(14),
+            Constraint::Min(0),
+        ])
+        .split(area);
+
+    let mut lines = Vec::new();
+    
+    let options = [
+        ("Display Units", format!("{:?}", app.temp_config.units)),
+        ("Ignore Loopback Interface", if app.temp_config.skip_loopback { "Yes".to_string() } else { "No".to_string() }),
+        ("Sample Interval (Seconds)", format!("{}s", app.temp_config.sample_interval)),
+        ("Database Write Batching (Seconds)", format!("{}s", app.temp_config.batch_write_interval)),
+        ("Data Retention (Days)", format!("{} days", app.temp_config.history_days)),
+        ("Save & Apply Settings", "".to_string()),
+        ("Cancel & Discard Changes", "".to_string()),
+    ];
+
+    for (idx, (label, val)) in options.iter().enumerate() {
+        let is_selected = idx == app.settings_selection;
+        let prefix = if is_selected { " > " } else { "   " };
+        let style = if is_selected {
+            Style::default().fg(theme.accent).add_modifier(Modifier::BOLD)
+        } else {
+            Style::default().fg(theme.text)
+        };
+        
+        let line = if val.is_empty() {
+            format!("{prefix}{label}")
+        } else {
+            format!("{prefix}{:<35} : {}", label, val)
+        };
+        
+        lines.push(ratatui::text::Line::styled(line, style));
+    }
+
+    lines.push(ratatui::text::Line::from(""));
+    lines.push(ratatui::text::Line::styled(
+        " Note: Setting changes to intervals will require restarting the background daemon (netwatchd) to take full effect.",
+        Style::default().fg(theme.dim),
+    ));
+
+    frame.render_widget(
+        Paragraph::new(lines).block(titled_block("Settings", theme)),
+        chunks[0],
+    );
 }
