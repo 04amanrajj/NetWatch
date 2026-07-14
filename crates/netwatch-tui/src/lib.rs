@@ -89,7 +89,7 @@ pub async fn run(config: &Config, db: &Database, options: RunOptions) -> Result<
                             KeyCode::Char('q') | KeyCode::Esc if app.page != Page::Search => {
                                 app.should_quit = true;
                             }
-                            KeyCode::Char('?') => app.show_help = !app.show_help,
+                            KeyCode::Char('?') | KeyCode::F(1) => app.show_help = !app.show_help,
                             KeyCode::Char('s') => {
                                 app.enter_settings();
                             }
@@ -140,7 +140,11 @@ pub async fn run(config: &Config, db: &Database, options: RunOptions) -> Result<
                                 app.apply_search();
                             }
                             KeyCode::Tab => {
-                                app.next_history_range();
+                                app.next_page();
+                                should_refresh = true;
+                            }
+                            KeyCode::BackTab => {
+                                app.prev_page();
                                 should_refresh = true;
                             }
                             _ => {}

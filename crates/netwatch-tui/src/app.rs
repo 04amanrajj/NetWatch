@@ -146,6 +146,32 @@ impl App {
         }
     }
 
+    pub fn next_page(&mut self) {
+        self.page = match self.page {
+            Page::Home => Page::Interfaces,
+            Page::Interfaces => Page::History,
+            Page::History => Page::Graph,
+            Page::Graph => Page::Live,
+            Page::Live => Page::Settings,
+            Page::Settings => Page::Home,
+            Page::InterfaceDetail => Page::Interfaces,
+            Page::Search => Page::Interfaces,
+        };
+    }
+
+    pub fn prev_page(&mut self) {
+        self.page = match self.page {
+            Page::Home => Page::Settings,
+            Page::Interfaces => Page::Home,
+            Page::History => Page::Interfaces,
+            Page::Graph => Page::History,
+            Page::Live => Page::Graph,
+            Page::Settings => Page::Live,
+            Page::InterfaceDetail => Page::Interfaces,
+            Page::Search => Page::Interfaces,
+        };
+    }
+
     pub async fn refresh(&mut self, db: &netwatch_db::Database) -> anyhow::Result<()> {
         self.totals = db.today_totals().await?;
         self.speeds = db.current_speeds().await?;

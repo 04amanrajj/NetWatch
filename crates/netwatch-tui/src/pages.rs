@@ -1,11 +1,12 @@
 use ratatui::layout::{Constraint, Direction, Layout, Rect};
-use ratatui::style::{Modifier, Style};
-use ratatui::widgets::{Cell, Paragraph, Row, Table};
+use ratatui::style::{Color, Modifier, Style};
+use ratatui::text::{Line, Span};
+use ratatui::widgets::{Block, Borders, Cell, Paragraph, Row, Table};
 use ratatui::Frame;
 
 use crate::app::{App, Page};
 use crate::theme::Theme;
-use crate::widgets::{draw_sparkline, titled_block};
+use crate::widgets::titled_block;
 use netwatch_stats::{format_bytes, format_rate};
 
 pub fn draw(frame: &mut Frame, app: &App, theme: &Theme) {
@@ -44,20 +45,55 @@ fn draw_header(frame: &mut Frame, area: Rect, app: &App, theme: &Theme) {
     } else {
         String::new()
     };
-    let title = format!(" NetWatch{alerts} ");
-    frame.render_widget(titled_block(&title, theme), area);
+
+    let left_text = format!(" NetWatch{alerts}");
+
+    let daemon_status_text = if app.daemon_status.running {
+        "Daemon ● Running"
+    } else {
+        "Daemon ● Stopped"
+    };
+    let daemon_color = if app.daemon_status.running {
+        theme.up
+    } else {
+        theme.down
+    };
+
+    let now = chrono::Local::now().format("%d %b %H:%M:%S").to_string();
+
+    let mut spans = vec![
+        Span::styled(left_text, Style::default().fg(theme.title).add_modifier(Modifier::BOLD)),
+    ];
+
+    let right_text_len = daemon_status_text.len() + now.len() + 8;
+    let total_width = area.width as usize;
+    let spaces = total_width.saturating_sub(12 + alerts.len() + right_text_len).saturating_sub(4);
+
+    spans.push(Span::raw(" ".repeat(spaces)));
+    spans.push(Span::raw("Daemon "));
+    spans.push(Span::styled("●", Style::default().fg(daemon_color)));
+    spans.push(Span::raw(if app.daemon_status.running { " Running" } else { " Stopped" }));
+    spans.push(Span::styled("  │  ", Style::default().fg(theme.dim)));
+    spans.push(Span::styled(now, Style::default().fg(theme.title)));
+
+    let block = Block::default()
+        .borders(Borders::ALL)
+        .border_style(Style::default().fg(theme.dim));
+
+    let paragraph = Paragraph::new(Line::from(spans)).block(block);
+    frame.render_widget(paragraph, area);
 }
 
 fn draw_footer(frame: &mut Frame, area: Rect, app: &App, theme: &Theme) {
     let keys = match app.page {
-        Page::Home => "i:Interfaces h:History g:Graph l:Live s:Settings /:Search ?:Help q:Quit",
-        Page::Interfaces => "Enter:Detail Esc/q:Back ?:Help",
-        Page::InterfaceDetail => "Esc/q:Back ?:Help",
-        Page::History => "←/→:Range Tab:Next ?:Help q:Quit",
-        Page::Graph => "←/→:Resolution ?:Help q:Quit",
-        Page::Live => "q:Quit ?:Help",
-        Page::Search => "Type to filter Esc:Back",
-        Page::Settings => "↑/↓:Navigate ←/→:Adjust Enter:Select Esc/q:Back",
+        Page::Home => " F1:Help │ Tab:Switch │ Enter:Details │ /:Search │ q:Quit ",
+        Page::Interfaces => " F1:Help │ Tab:Switch │ Enter:Detail │ Esc:Back │ q:Quit ",
+        Page::InterfaceDetail => " F1:Help │ Esc/q:Back ",
+        Page::History => " F1:Help │ Tab:Switch │ ←/→:Range │ q:Quit ",
+        Page::Graph => " F1:Help │ Tab:Switch │ ←/→:Resolution │ q:Quit ",
+        Page::Live => " F1:Help │ Tab:Switch │ q:Quit ",
+        Page::Search => " Type to filter │ Esc:Back ",
+        Page::Settings => " ↑/↓:Navigate │ ←/→:Adjust │ Enter:Save/Cancel │ Esc:Back ",
     };
     frame.render_widget(
         Paragraph::new(keys).style(Style::default().fg(theme.dim)),
@@ -69,46 +105,132 @@ fn draw_home(frame: &mut Frame, area: Rect, app: &App, theme: &Theme) {
     let units = app.config.units;
     let chunks = Layout::default()
         .direction(Direction::Vertical)
-        .margin(1)
-        .constraints([Constraint::Length(12), Constraint::Min(0)])
+        .constraints([
+            Constraint::Length(4), // Top row: cards
+            Constraint::Min(0),    // Bottom row: graph and top list
+        ])
         .split(area);
 
-    let text = format!(
-        "Today\n\
-         Download      {}\n\
-         Upload        {}\n\n\
-         Current Speed\n\
-         ↓ {}\n\
-         ↑ {}\n\n\
-         Interfaces Active  {}\n\
-         Database Size      {}\n\
-         Daemon             {}\n\
-         Sampling           {} sec",
-        format_bytes(app.totals.download, units),
-        format_bytes(app.totals.upload, units),
-        format_rate(app.speeds.rx_rate, units),
-        format_rate(app.speeds.tx_rate, units),
-        app.interfaces.len(),
-        format_bytes(app.db_size, units),
-        if app.daemon_status.running {
-            "Running"
-        } else {
-            "Stopped"
-        },
-        app.config.sample_interval,
-    );
-    frame.render_widget(
-        Paragraph::new(text).block(titled_block("Home", theme)),
-        chunks[0],
-    );
+    let top_chunks = Layout::default()
+        .direction(Direction::Horizontal)
+        .constraints([
+            Constraint::Percentage(33),
+            Constraint::Percentage(34),
+            Constraint::Percentage(33),
+        ])
+        .split(chunks[0]);
 
+    // Widget 1: Today
+    let today_block = Block::default()
+        .borders(Borders::ALL)
+        .border_style(Style::default().fg(theme.dim))
+        .title(Span::styled(" Today ", Style::default().fg(theme.title).add_modifier(Modifier::BOLD)));
+        
+    let today_text = vec![
+        Line::from(vec![
+            Span::styled(" ↓ ", Style::default().fg(theme.up)),
+            Span::styled(format_bytes(app.totals.download, units), Style::default().fg(theme.text).add_modifier(Modifier::BOLD)),
+        ]),
+        Line::from(vec![
+            Span::styled(" ↑ ", Style::default().fg(theme.accent)),
+            Span::styled(format_bytes(app.totals.upload, units), Style::default().fg(theme.text).add_modifier(Modifier::BOLD)),
+        ]),
+    ];
+    frame.render_widget(Paragraph::new(today_text).block(today_block), top_chunks[0]);
+
+    // Widget 2: Current Speed
+    let speed_block = Block::default()
+        .borders(Borders::ALL)
+        .border_style(Style::default().fg(theme.dim))
+        .title(Span::styled(" Current Speed ", Style::default().fg(theme.title).add_modifier(Modifier::BOLD)));
+        
+    let speed_text = vec![
+        Line::from(vec![
+            Span::styled(" ↓ ", Style::default().fg(theme.up)),
+            Span::styled(format_rate(app.speeds.rx_rate, units), Style::default().fg(theme.text).add_modifier(Modifier::BOLD)),
+        ]),
+        Line::from(vec![
+            Span::styled(" ↑ ", Style::default().fg(theme.accent)),
+            Span::styled(format_rate(app.speeds.tx_rate, units), Style::default().fg(theme.text).add_modifier(Modifier::BOLD)),
+        ]),
+    ];
+    frame.render_widget(Paragraph::new(speed_text).block(speed_block), top_chunks[1]);
+
+    // Widget 3: Interfaces
+    let mut up_count = 0;
+    let mut down_count = 0;
+    for iface in &app.interfaces {
+        if iface.operstate == "UP" {
+            up_count += 1;
+        } else {
+            down_count += 1;
+        }
+    }
+    
+    let iface_block = Block::default()
+        .borders(Borders::ALL)
+        .border_style(Style::default().fg(theme.dim))
+        .title(Span::styled(" Interfaces ", Style::default().fg(theme.title).add_modifier(Modifier::BOLD)));
+        
+    let iface_text = vec![
+        Line::from(vec![
+            Span::raw(" Active: "),
+            Span::styled(app.interfaces.len().to_string(), Style::default().fg(theme.title).add_modifier(Modifier::BOLD)),
+        ]),
+        Line::from(vec![
+            Span::raw(" Up: "),
+            Span::styled(up_count.to_string(), Style::default().fg(theme.up).add_modifier(Modifier::BOLD)),
+            Span::raw("   Down: "),
+            Span::styled(down_count.to_string(), Style::default().fg(theme.down).add_modifier(Modifier::BOLD)),
+        ]),
+    ];
+    frame.render_widget(Paragraph::new(iface_text).block(iface_block), top_chunks[2]);
+
+    // Bottom row: Graph & Top Interfaces side-by-side
+    let bottom_chunks = Layout::default()
+        .direction(Direction::Horizontal)
+        .constraints([
+            Constraint::Percentage(70),
+            Constraint::Percentage(30),
+        ])
+        .split(chunks[1]);
+
+    // Widget 4: Graph
     let rx: Vec<u64> = app.graph_points.iter().map(|p| p.rx_rate).collect();
-    draw_sparkline(frame, chunks[1], &rx, "Download (recent)", theme);
+    let graph_block = Block::default()
+        .borders(Borders::ALL)
+        .border_style(Style::default().fg(theme.dim))
+        .title(Span::styled(" Download Graph ", Style::default().fg(theme.title).add_modifier(Modifier::BOLD)));
+        
+    let sparkline = ratatui::widgets::Sparkline::default()
+        .block(graph_block)
+        .data(&rx)
+        .style(Style::default().fg(theme.up));
+    frame.render_widget(sparkline, bottom_chunks[0]);
+
+    // Widget 5: Top Interfaces
+    let mut sorted_ifaces = app.interfaces.clone();
+    sorted_ifaces.sort_by(|a, b| b.download.cmp(&a.download));
+    
+    let top_block = Block::default()
+        .borders(Borders::ALL)
+        .border_style(Style::default().fg(theme.dim))
+        .title(Span::styled(" Top Interfaces ", Style::default().fg(theme.title).add_modifier(Modifier::BOLD)));
+        
+    let mut top_lines = Vec::new();
+    for iface in sorted_ifaces.iter().take(5) {
+        let name = &iface.name;
+        let traffic = format_bytes(iface.download, units);
+        let name_span = Span::styled(format!("  {:<10}  ", name), Style::default().fg(theme.text));
+        let traffic_span = Span::styled(traffic, Style::default().fg(theme.accent).add_modifier(Modifier::BOLD));
+        top_lines.push(Line::from(vec![name_span, traffic_span]));
+    }
+    frame.render_widget(Paragraph::new(top_lines).block(top_block), bottom_chunks[1]);
 }
 
 fn draw_interfaces(frame: &mut Frame, area: Rect, app: &App, theme: &Theme) {
     let units = app.config.units;
-    let header = Row::new(vec!["Interface", "Download", "Upload", "Status"])
+    let header = Row::new(vec!["  Name", "↓ Today", "↑ Today", "Speed", "Status"])
         .style(theme.title_style())
         .bottom_margin(1);
 
@@ -118,34 +240,52 @@ fn draw_interfaces(frame: &mut Frame, area: Rect, app: &App, theme: &Theme) {
         .enumerate()
         .map(|(vis_idx, &idx)| {
             let iface = &app.interfaces[idx];
-            let style = if vis_idx == app.selection {
-                Style::default().add_modifier(Modifier::REVERSED)
-            } else if iface.operstate == "UP" {
-                Style::default().fg(theme.up)
+            let is_selected = vis_idx == app.selection;
+            let cursor = if is_selected { "▶ " } else { "  " };
+
+            let status_dot = if iface.operstate == "UP" {
+                Span::styled("●", Style::default().fg(theme.up))
             } else {
-                Style::default().fg(theme.down)
+                Span::styled("○", Style::default().fg(theme.down))
             };
+
+            let row_style = if is_selected {
+                Style::default().fg(theme.border).add_modifier(Modifier::BOLD)
+            } else if vis_idx % 2 == 1 {
+                Style::default().bg(Color::Rgb(25, 25, 25))
+            } else {
+                Style::default().fg(theme.text)
+            };
+
+            let speed = format_rate(iface.rx_rate, units);
+
             Row::new(vec![
-                Cell::from(iface.name.clone()),
+                Cell::from(format!("{}{}", cursor, iface.name)),
                 Cell::from(format_bytes(iface.download, units)),
                 Cell::from(format_bytes(iface.upload, units)),
-                Cell::from(iface.operstate.clone()),
+                Cell::from(speed),
+                Cell::from(status_dot),
             ])
-            .style(style)
+            .style(row_style)
         })
         .collect();
 
     let table = Table::new(
         rows,
         [
-            Constraint::Percentage(30),
-            Constraint::Percentage(25),
             Constraint::Percentage(25),
             Constraint::Percentage(20),
+            Constraint::Percentage(20),
+            Constraint::Percentage(20),
+            Constraint::Percentage(15),
         ],
     )
     .header(header)
-    .block(titled_block("Interfaces", theme));
+    .block(Block::default()
+        .borders(Borders::ALL)
+        .border_style(Style::default().fg(theme.dim))
+        .title(Span::styled(" Interfaces ", theme.title_style()))
+    );
 
     frame.render_widget(table, area);
 }
@@ -228,9 +368,9 @@ fn draw_interface_detail(frame: &mut Frame, area: Rect, app: &App, theme: &Theme
 
 fn draw_history(frame: &mut Frame, area: Rect, app: &App, theme: &Theme) {
     let units = app.config.units;
-    let title = format!("History — {}", app.history_range_label());
+    let title = format!(" History — {} ", app.history_range_label());
     let header = Row::new(vec![
-        "Date", "Download", "Upload", "Total", "Peak DL", "Peak UL",
+        "  Date", "Download", "Upload", "Total", "Peak DL", "Peak UL",
     ])
     .style(theme.title_style())
     .bottom_margin(1);
@@ -240,20 +380,26 @@ fn draw_history(frame: &mut Frame, area: Rect, app: &App, theme: &Theme) {
         .iter()
         .enumerate()
         .map(|(idx, entry)| {
-            let style = if idx == app.selection {
-                Style::default().add_modifier(Modifier::REVERSED)
+            let is_selected = idx == app.selection;
+            let cursor = if is_selected { "▶ " } else { "  " };
+
+            let row_style = if is_selected {
+                Style::default().fg(theme.border).add_modifier(Modifier::BOLD)
+            } else if idx % 2 == 1 {
+                Style::default().bg(Color::Rgb(25, 25, 25))
             } else {
                 Style::default().fg(theme.text)
             };
+
             Row::new(vec![
-                Cell::from(entry.date.clone()),
+                Cell::from(format!("{}{}", cursor, entry.date)),
                 Cell::from(format_bytes(entry.download, units)),
                 Cell::from(format_bytes(entry.upload, units)),
                 Cell::from(format_bytes(entry.total, units)),
                 Cell::from(format_bytes(entry.peak_download, units)),
                 Cell::from(format_bytes(entry.peak_upload, units)),
             ])
-            .style(style)
+            .style(row_style)
         })
         .collect();
 
@@ -269,44 +415,56 @@ fn draw_history(frame: &mut Frame, area: Rect, app: &App, theme: &Theme) {
         ],
     )
     .header(header)
-    .block(titled_block(&title, theme));
+    .block(Block::default()
+        .borders(Borders::ALL)
+        .border_style(Style::default().fg(theme.dim))
+        .title(Span::styled(title, theme.title_style()))
+    );
 
     frame.render_widget(table, area);
 }
 
 fn draw_graph(frame: &mut Frame, area: Rect, app: &App, theme: &Theme) {
-    let title = format!("Graph — {}", app.graph_resolution_label());
+    let title = format!(" Graph — {} ", app.graph_resolution_label());
     let chunks = Layout::default()
         .direction(Direction::Vertical)
-        .constraints([Constraint::Percentage(50), Constraint::Percentage(50)])
-        .margin(1)
+        .constraints([
+            Constraint::Percentage(50),
+            Constraint::Percentage(50),
+        ])
         .split(area);
-
-    let block = titled_block(&title, theme);
-    frame.render_widget(block, area);
-
-    let inner = Layout::default()
-        .direction(Direction::Vertical)
-        .constraints([Constraint::Percentage(50), Constraint::Percentage(50)])
-        .split(Rect {
-            x: area.x + 1,
-            y: area.y + 1,
-            width: area.width.saturating_sub(2),
-            height: area.height.saturating_sub(2),
-        });
 
     let rx: Vec<u64> = app.graph_points.iter().map(|p| p.rx_rate).collect();
     let tx: Vec<u64> = app.graph_points.iter().map(|p| p.tx_rate).collect();
-    draw_sparkline(frame, inner[0], &rx, "Download", theme);
-    draw_sparkline(frame, inner[1], &tx, "Upload", theme);
 
-    let _ = chunks;
+    let dl_block = Block::default()
+        .borders(Borders::ALL)
+        .border_style(Style::default().fg(theme.dim))
+        .title(Span::styled(format!(" Download ({}) ", title), Style::default().fg(theme.title).add_modifier(Modifier::BOLD)));
+        
+    let dl_sparkline = ratatui::widgets::Sparkline::default()
+        .block(dl_block)
+        .data(&rx)
+        .style(Style::default().fg(theme.up));
+
+    let ul_block = Block::default()
+        .borders(Borders::ALL)
+        .border_style(Style::default().fg(theme.dim))
+        .title(Span::styled(" Upload ", Style::default().fg(theme.title).add_modifier(Modifier::BOLD)));
+        
+    let ul_sparkline = ratatui::widgets::Sparkline::default()
+        .block(ul_block)
+        .data(&tx)
+        .style(Style::default().fg(theme.accent));
+
+    frame.render_widget(dl_sparkline, chunks[0]);
+    frame.render_widget(ul_sparkline, chunks[1]);
 }
 
 fn draw_live(frame: &mut Frame, area: Rect, app: &App, theme: &Theme) {
     let units = app.config.units;
     let header = Row::new(vec![
-        "Interface",
+        "  Interface",
         "Download",
         "Upload",
         "Peak",
@@ -319,17 +477,37 @@ fn draw_live(frame: &mut Frame, area: Rect, app: &App, theme: &Theme) {
     let rows: Vec<Row> = app
         .interfaces
         .iter()
-        .map(|iface| {
+        .enumerate()
+        .map(|(idx, iface)| {
+            let is_selected = idx == app.selection;
+            let cursor = if is_selected { "▶ " } else { "  " };
+
+            let status_dot = if iface.operstate == "UP" {
+                Span::styled("●", Style::default().fg(theme.up))
+            } else {
+                Span::styled("○", Style::default().fg(theme.down))
+            };
+
+            let row_style = if is_selected {
+                Style::default().fg(theme.border).add_modifier(Modifier::BOLD)
+            } else if idx % 2 == 1 {
+                Style::default().bg(Color::Rgb(25, 25, 25))
+            } else {
+                Style::default().fg(theme.text)
+            };
+
             let peak = format_rate(iface.rx_rate.max(iface.tx_rate), units);
             let avg = format_rate((iface.rx_rate + iface.tx_rate) / 2, units);
+
             Row::new(vec![
-                Cell::from(iface.name.clone()),
+                Cell::from(format!("{}{}", cursor, iface.name)),
                 Cell::from(format_rate(iface.rx_rate, units)),
                 Cell::from(format_rate(iface.tx_rate, units)),
                 Cell::from(peak),
                 Cell::from(avg),
-                Cell::from(iface.operstate.clone()),
+                Cell::from(status_dot),
             ])
+            .style(row_style)
         })
         .collect();
 
@@ -345,7 +523,11 @@ fn draw_live(frame: &mut Frame, area: Rect, app: &App, theme: &Theme) {
         ],
     )
     .header(header)
-    .block(titled_block("Live Monitor", theme));
+    .block(Block::default()
+        .borders(Borders::ALL)
+        .border_style(Style::default().fg(theme.dim))
+        .title(Span::styled(" Live Monitor ", theme.title_style()))
+    );
 
     frame.render_widget(table, area);
 }
